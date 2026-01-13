@@ -48,12 +48,12 @@ STAT_COLS = ["St","Tk","Ps","Sh","KAb","TAb","PAb","SAb"]
 
 if "table_key" not in st.session_state:
     st.session_state.table_key = 0
+if "slider_key_version" not in st.session_state:
+    st.session_state.slider_key_version = 0
 if "prev_club" not in st.session_state:
     st.session_state.prev_club = "All"
 if "prev_position" not in st.session_state:
     st.session_state.prev_position = "All"
-if "reset_filters" not in st.session_state:
-    st.session_state.reset_filters = False
 
 # ------------------------------
 # Sidebar Filters & Reset
@@ -64,8 +64,8 @@ st.sidebar.header("Filters")
 if st.sidebar.button("🔄 Reset all filters"):
     st.session_state.club = "All"
     st.session_state.position = "All"
-    st.session_state.reset_filters = True
-    st.session_state.table_key += 1
+    st.session_state.slider_key_version += 1  # Increment slider keys
+    st.session_state.table_key += 1          # Increment table key to force refresh
 
 # Club / Position filters
 club_input = st.sidebar.selectbox(
@@ -81,13 +81,13 @@ position_input = st.sidebar.selectbox(
 )
 
 # ------------------------------
-# Clear sliders if filter changed
+# Reset sliders if Club/Position changed
 # ------------------------------
 if club_input != st.session_state.prev_club or position_input != st.session_state.prev_position:
-    st.session_state.reset_filters = True
+    st.session_state.slider_key_version += 1
+    st.session_state.table_key += 1
     st.session_state.prev_club = club_input
     st.session_state.prev_position = position_input
-    st.session_state.table_key += 1
 
 # ------------------------------
 # Base filtering
@@ -113,20 +113,17 @@ for col in STAT_COLS:
     min_val, max_val = SLIDER_RANGES[col]
     step = 250 if col in ["KAb","TAb","PAb","SAb"] else 1
 
-    # Use reset flag to force default values
-    default_val = (min_val, max_val) if st.session_state.reset_filters else st.session_state.get(f"{col}_range", (min_val, max_val))
+    # Use versioned key to force reset
+    slider_key = f"{col}_range_v{st.session_state.slider_key_version}"
 
     stat_filters[col] = st.sidebar.slider(
         f"{col} range",
         min_val,
         max_val,
-        value=default_val,
+        value=(min_val, max_val),
         step=step,
-        key=f"{col}_range"
+        key=slider_key
     )
-
-# Clear reset flag after sliders are drawn
-st.session_state.reset_filters = False
 
 # ------------------------------
 # Apply stat filters
