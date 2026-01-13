@@ -1,22 +1,26 @@
 import streamlit as st
 import pandas as pd
+from st_aggrid import AgGrid, GridOptionsBuilder
 
+# Page setup
 st.set_page_config(page_title="TDE3 Scouting Tool", layout="wide")
-
 st.title("TDE3 Scouting Tool")
 
+# URL to the player data
 DATA_URL = "https://www.tde3.co.uk/season33/all_plrs.txt"
 
+# ----------------------------
+# Load and clean data
+# ----------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv(
-        DATA_URL,
-        sep=r"\s+",
-        header=None
-    )
+    # Read whitespace-delimited file
+    df = pd.read_csv(DATA_URL, sep=r"\s+", header=None)
 
+    # Take only the first 13 columns
     df = df.iloc[:, :13]
 
+    # Assign column names
     df.columns = [
         "Team",
         "Player",
@@ -35,28 +39,23 @@ def load_data():
 
     return df
 
-
-
-
 df = load_data()
 
 # Convert numeric columns safely
-numeric_cols = ["Age", "St", "Tk", "Ps", "Sh", "Ag",
-                "KAb", "TAb", "PAb", "SAb"]
-
+numeric_cols = ["Age", "St", "Tk", "Ps", "Sh", "Ag", "KAb", "TAb", "PAb", "SAb"]
 for col in numeric_cols:
     df[col] = pd.to_numeric(df[col], errors="coerce")
 
 # Drop rows where Age is missing
 df = df.dropna(subset=["Age"])
-
-# Ensure Age is integer
 df["Age"] = df["Age"].astype(int)
 
+# ----------------------------
 # Sidebar filters
+# ----------------------------
 st.sidebar.header("Filters")
 
-# HARD-CODED safe age range
+# Hard-coded safe age range slider
 age_min, age_max = st.sidebar.slider(
     "Age",
     min_value=15,
@@ -64,28 +63,36 @@ age_min, age_max = st.sidebar.slider(
     value=(18, 30)
 )
 
+# Apply age filter
 filtered = df[
     (df["Age"] >= age_min) &
     (df["Age"] <= age_max)
 ]
 
-st.write("Total players loaded:", len(df))
-st.write("Players after filtering:", len(filtered))
+# ----------------------------
+# Display table using AgGrid
+# ----------------------------
+# Reset index to remove row numbers
+filtered_display = filtered.reset_index(drop=True)
 
-# Optionally format numeric columns as integers for display
-numeric_cols = ["Age", "St", "Tk", "Ps", "Sh", "Ag",
-                "KAb", "TAb", "PAb", "SAb"]
+# Build AgGrid options
+gb = GridOptionsBuilder.from_dataframe(filtered_display)
+gb.configure_default_column(resizable=True, filter=True)
 
-# Round numeric columns to integers
+# Center-align numeric columns
 for col in numeric_cols:
-    filtered[col] = filtered[col].astype(int)
+    gb.configure_column(col, type=["numericColumn"], cellStyle={"textAlign": "center"})
 
-# Display full table using browser scroll
-st.table(filtered)
+# Left-align Player column
+gb.configure_column("Player", cellStyle={"textAlign": "left"})
 
+# Build grid options
+gridOptions = gb.build()
 
-st.dataframe(
-    styled,
-    use_container_width=True,
-    hide_index=True
+# Display interactive table (browser scrolling, columns auto-fit)
+AgGrid(
+    filtered_display,
+    gridOptions=gridOptions,
+    enable_enterprise_modules=False,
+    fit_columns_on_grid_load=True
 )
