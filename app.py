@@ -118,13 +118,24 @@ if position_input != "All":
 stat_filters = {}
 
 for col in STAT_COLS:
+    if base_filtered.empty:
+        # No data, just set safe defaults
+        stat_filters[col] = (0, 0)
+        st.sidebar.slider(
+            f"{col} range",
+            0,
+            0,
+            disabled=True,
+            key=f"{col}_range"
+        )
+        continue
+
     min_val = int(base_filtered[col].min())
     max_val = int(base_filtered[col].max())
 
-    # Initialize with safe default
+    # Safe default assignment
     stat_filters[col] = (min_val, max_val)
 
-    # If min==max, disable slider
     if min_val == max_val:
         st.sidebar.slider(
             f"{col} range",
@@ -140,6 +151,7 @@ for col in STAT_COLS:
             max_val,
             key=f"{col}_range"
         )
+
 
 # Force table remount on filter change
 st.session_state.table_key += 1
