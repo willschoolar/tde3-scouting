@@ -23,6 +23,15 @@ def load_data():
 
 df = load_data()
 
+# Convert numeric columns safely
+numeric_cols = ["Age", "St", "Tk", "Ps", "Sh", "Ag",
+                "KAb", "TAb", "PAb", "SAb"]
+
+for col in numeric_cols:
+    df[col] = pd.to_numeric(df[col], errors="coerce")
+
+df = df.dropna(subset=["Age"])
+
 # Sidebar filters
 st.sidebar.header("Filters")
 
@@ -44,5 +53,3 @@ st.dataframe(
     use_container_width=True,
     height=600
 )
-
-st.caption("Data source: tde3.co.uk – updates automatically on page load")
