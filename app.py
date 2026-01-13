@@ -72,8 +72,16 @@ filtered = df[
 st.write("Total players loaded:", len(df))
 st.write("Players after filtering:", len(filtered))
 
+# Align columns: Player left, everything else center
+styled = filtered.style.set_properties(
+    **{"text-align": "center"}
+).set_properties(
+    subset=["Player"],
+    **{"text-align": "left"}
+)
+
 st.dataframe(
-    filtered,
+    styled,
     use_container_width=True,
-    height=600
+    hide_index=True
 )
