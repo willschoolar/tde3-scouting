@@ -33,6 +33,7 @@ df["Age"] = df["Age"].astype(int)
 def assign_position(row):
     stats = {"GK": row["St"], "DF": row["Tk"], "MF": row["Ps"], "FW": row["Sh"]}
     return max(stats, key=stats.get)
+
 df["Position"] = df.apply(assign_position, axis=1)
 
 # ----------------------------
@@ -72,7 +73,7 @@ for col in numeric_cols:
     filtered_display[col] = filtered_display[col].astype(int)
 
 # ----------------------------
-# Auto-sort by position (primary + secondary)
+# Auto-sort by position stat (team view only)
 # ----------------------------
 position_sort_map = {
     "GK": ("St","KAb"),
@@ -80,11 +81,18 @@ position_sort_map = {
     "MF": ("Ps","PAb"),
     "FW": ("Sh","SAb")
 }
-if position_input in position_sort_map:
-    primary, secondary = position_sort_map[position_input]
+
+if club_input != "All":
+    # Sort team by main position stat + ability points
+    def sort_key(row):
+        primary, secondary = position_sort_map[row["Position"]]
+        return (-row[primary], -row[secondary])
+    
+    # Apply sorting
+    filtered_display["sort_order"] = filtered_display.apply(sort_key, axis=1)
     filtered_display = filtered_display.sort_values(
-        by=[primary, secondary], ascending=[False, False]
-    ).reset_index(drop=True)
+        by="sort_order", ascending=True
+    ).drop(columns="sort_order").reset_index(drop=True)
 
 # ----------------------------
 # Display counts
@@ -107,8 +115,11 @@ div[data-testid="stDataFrame"] td:nth-child(2) {text-align: left;} /* Player lef
 # Display table with dynamic height
 # ----------------------------
 row_height_px = 30  # pixels per row
-max_height = 800    # maximum table height in px
-table_height = min(max_height, len(filtered_display)*row_height_px + 50)  # add header height
+max_height = 800    # max height
 
-# st.dataframe(filtered_display, use_container_width=True, height=table_height)
-st.dataframe(filtered_display, use_container_width=True, height=800)
+if club_input == "All":
+    # Show all rows, browser scroll handles vertical scroll
+    st.dataframe(filtered_display, use_container_width=True)
+else:
+    table_height = min(max_height, len(filtered_display)*row_height_px + 50)
+    st.dataframe(filtered_display, use_container_width=True, height=table_height)
