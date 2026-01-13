@@ -73,8 +73,9 @@ for col in numeric_cols:
     filtered_display[col] = filtered_display[col].astype(int)
 
 # ----------------------------
-# Auto-sort by position stat (team view only)
+# Auto-sort when team selected
 # ----------------------------
+position_order = {"GK": 0, "DF": 1, "MF": 2, "FW": 3}
 position_sort_map = {
     "GK": ("St","KAb"),
     "DF": ("Tk","TAb"),
@@ -83,16 +84,16 @@ position_sort_map = {
 }
 
 if club_input != "All":
-    # Sort team by main position stat + ability points
-    def sort_key(row):
-        primary, secondary = position_sort_map[row["Position"]]
-        return (-row[primary], -row[secondary])
-    
-    # Apply sorting
-    filtered_display["sort_order"] = filtered_display.apply(sort_key, axis=1)
+    # Add position order
+    filtered_display["pos_order"] = filtered_display["Position"].map(position_order)
+    # Add primary & secondary for sorting
+    filtered_display["primary"] = filtered_display.apply(lambda r: r[position_sort_map[r["Position"]][0]], axis=1)
+    filtered_display["secondary"] = filtered_display.apply(lambda r: r[position_sort_map[r["Position"]][1]], axis=1)
+    # Sort: position order, then primary desc, then secondary desc
     filtered_display = filtered_display.sort_values(
-        by="sort_order", ascending=True
-    ).drop(columns="sort_order").reset_index(drop=True)
+        by=["pos_order","primary","secondary"],
+        ascending=[True, False, False]
+    ).drop(columns=["pos_order","primary","secondary"]).reset_index(drop=True)
 
 # ----------------------------
 # Display counts
@@ -112,14 +113,15 @@ div[data-testid="stDataFrame"] td:nth-child(2) {text-align: left;} /* Player lef
 """, unsafe_allow_html=True)
 
 # ----------------------------
-# Display table with dynamic height
+# Display table
 # ----------------------------
-row_height_px = 30  # pixels per row
-max_height = 800    # max height
+row_height_px = 30
+num_rows_to_show = 30
+max_height = row_height_px*num_rows_to_show + 50  # 30 rows + header
 
 if club_input == "All":
-    # Show all rows, browser scroll handles vertical scroll
-    st.dataframe(filtered_display, use_container_width=True)
+    # Use st.table for full browser scroll, no internal scroll
+    st.table(filtered_display)
 else:
-    table_height = min(max_height, len(filtered_display)*row_height_px + 50)
-    st.dataframe(filtered_display, use_container_width=True, height=table_height)
+    # Use st.dataframe with fixed height for 30 rows
+    st.dataframe(filtered_display, use_container_width=True, height=max_height)
