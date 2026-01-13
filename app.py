@@ -90,9 +90,13 @@ gb.configure_column("Player", cellStyle={"textAlign": "left"})
 gridOptions = gb.build()
 
 # Display interactive table (browser scrolling, columns auto-fit)
+row_height = 25  # pixels per row
+grid_height = min(len(filtered_display) * row_height, 2000)  # max 2000px
 AgGrid(
     filtered_display,
     gridOptions=gridOptions,
     enable_enterprise_modules=False,
-    fit_columns_on_grid_load=True
+    fit_columns_on_grid_load=True,
+    height=grid_height
 )
+
