@@ -47,6 +47,12 @@ def assign_position(row):
 df["Position"] = df.apply(assign_position, axis=1)
 
 # ----------------------------
+# Init table key (forces reset)
+# ----------------------------
+if "table_key" not in st.session_state:
+    st.session_state.table_key = 0
+
+# ----------------------------
 # Reset function
 # ----------------------------
 def reset_filters():
@@ -57,6 +63,8 @@ def reset_filters():
             int(df[col].min()),
             int(df[col].max())
         )
+    # FORCE dataframe remount
+    st.session_state.table_key += 1
 
 # ----------------------------
 # Sidebar
@@ -68,16 +76,10 @@ if st.sidebar.button("🔄 Reset all filters"):
     st.rerun()
 
 club_options = ["All"] + sorted(df["Team"].unique())
-club_input = st.sidebar.selectbox(
-    "Club",
-    club_options,
-    key="club"
-)
+club_input = st.sidebar.selectbox("Club", club_options, key="club")
 
 position_input = st.sidebar.selectbox(
-    "Position",
-    ["All","GK","DF","MF","FW"],
-    key="position"
+    "Position", ["All","GK","DF","MF","FW"], key="position"
 )
 
 stat_sliders = {}
@@ -86,15 +88,15 @@ for col in ["St","Tk","Ps","Sh","KAb","TAb","PAb","SAb"]:
         f"{col} range",
         int(df[col].min()),
         int(df[col].max()),
-        (
-            int(df[col].min()),
-            int(df[col].max())
-        ),
+        (int(df[col].min()), int(df[col].max())),
         key=f"{col}_range"
     )
 
+# 🔑 Any filter change forces table reset
+st.session_state.table_key += 1
+
 # ----------------------------
-# Apply filters (fresh every run)
+# Apply filters
 # ----------------------------
 filtered = df.copy()
 
@@ -113,7 +115,7 @@ for col in numeric_cols:
     filtered_display[col] = filtered_display[col].astype(int)
 
 # ----------------------------
-# Sorting logic (team view)
+# Sorting (team view)
 # ----------------------------
 position_order = {"GK": 0, "DF": 1, "MF": 2, "FW": 3}
 position_sort_map = {
@@ -153,9 +155,7 @@ st.write(f"Players after filtering: {len(filtered_display)}")
 # ----------------------------
 st.markdown("""
 <style>
-div[data-testid="stDataFrame"] table {
-    table-layout: fixed;
-}
+div[data-testid="stDataFrame"] table { table-layout: fixed; }
 div[data-testid="stDataFrame"] td,
 div[data-testid="stDataFrame"] th {
     text-align: center;
@@ -170,7 +170,7 @@ div[data-testid="stDataFrame"] th:nth-child(2) {
 """, unsafe_allow_html=True)
 
 # ----------------------------
-# Display table
+# Display table (SORT RESET WORKS)
 # ----------------------------
 ROW_HEIGHT = 30
 VISIBLE_ROWS = 30
@@ -179,5 +179,6 @@ TABLE_HEIGHT = ROW_HEIGHT * VISIBLE_ROWS + 50
 st.dataframe(
     filtered_display,
     use_container_width=True,
-    height=TABLE_HEIGHT
+    height=TABLE_HEIGHT,
+    key=f"table_{st.session_state.table_key}"
 )
