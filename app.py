@@ -75,7 +75,7 @@ raw_club_map = {
     "nor": "Norwich City", "qpr": "Queens Park Rangers", "scu": "Scunthorpe United",
     "shu": "Sheffield United", "shw": "Sheffield Wednesday", "sou": "Southampton",
     "sto": "Stoke City", "wat": "Watford", "wba": "West Bromwich Albion",
-    "wol": "Wolverhampton Wanderers", "bha": "Brighton and Hove Albion", "not": "Nottingham Forest",
+    "wol": "Wolverhampton Wanderers", "bha": "Brighton", "not": "Nottingham Forest",
     "swi": "Swindon Town", "har": "Hartlepool United", "lee": "Leeds United", "swa": "Swansea City",
     "yar": "Arsenal U21s", "yas": "Aston Villa U21s", "ybi": "Birmingham City U21s", 
     "ybo": "Bournemouth U21s", "ych": "Chelsea U21s", "yco": "Coventry City U21s",
@@ -92,7 +92,7 @@ raw_club_map = {
     "yha": "Hartlepool United U21s", "yip": "Ipswich Town U21s", "yle": "Leeds United U21s",
     "ylc": "Leicester City U21s", "ynf": "Nottingham Forest U21s", "ysp": "Scunthorpe United U21s",
     "ywa": "Watford U21s", "ywo": "Wolverhampton U21s", "ybr": "Brentford U21s", "ysr": "Shrewsbury Town U21s",
-    "ywr": "Wrexham U21s"
+    "ywr": "Wrexham U21s";"bou": "Bournemouth", "bre":"Brentford", "wre":"Wrexham"
 }
 
 # ------------------------------
