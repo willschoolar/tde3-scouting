@@ -9,13 +9,24 @@ DATA_URL = "https://www.tde3.co.uk/season33/all_plrs.txt"
 
 @st.cache_data
 def load_data():
-    df = pd.read_fwf(DATA_URL, header=None)
+    # Read raw text
+    df = pd.read_csv(
+        DATA_URL,
+        header=None,
+        delim_whitespace=True,
+        engine="python"
+    )
+
+    # Force first 13 columns only
     df = df.iloc[:, :13]
+
     df.columns = [
         "Team", "Age", "Nat", "St", "Tk", "Ps", "Sh",
         "Ag", "KAb", "TAb", "PAb", "SAb", "X"
     ]
+
     return df
+
 
 
 df = load_data()
