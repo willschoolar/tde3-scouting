@@ -36,10 +36,8 @@ df["Age"] = df["Age"].astype(int)
 # Assign Position
 # --------------------------------------------------
 def assign_position(row):
-    return max(
-        {"GK": row["St"], "DF": row["Tk"], "MF": row["Ps"], "FW": row["Sh"]},
-        key=lambda k: {"GK": row["St"], "DF": row["Tk"], "MF": row["Ps"], "FW": row["Sh"]}[k]
-    )
+    stats = {"GK": row["St"], "DF": row["Tk"], "MF": row["Ps"], "FW": row["Sh"]}
+    return max(stats, key=stats.get)
 
 df["Position"] = df.apply(assign_position, axis=1)
 
@@ -71,7 +69,7 @@ def reset_all():
     st.session_state.table_key += 1
 
 # --------------------------------------------------
-# Sidebar
+# Sidebar filters
 # --------------------------------------------------
 st.sidebar.header("Filters")
 
@@ -123,6 +121,10 @@ for col in STAT_COLS:
     min_val = int(base_filtered[col].min())
     max_val = int(base_filtered[col].max())
 
+    # Initialize with safe default
+    stat_filters[col] = (min_val, max_val)
+
+    # If min==max, disable slider
     if min_val == max_val:
         st.sidebar.slider(
             f"{col} range",
@@ -131,7 +133,6 @@ for col in STAT_COLS:
             disabled=True,
             key=f"{col}_range"
         )
-        stat_filters[col] = (min_val, max_val)
     else:
         stat_filters[col] = st.sidebar.slider(
             f"{col} range",
@@ -139,6 +140,9 @@ for col in STAT_COLS:
             max_val,
             key=f"{col}_range"
         )
+
+# Force table remount on filter change
+st.session_state.table_key += 1
 
 # --------------------------------------------------
 # Apply stat filters
@@ -167,7 +171,6 @@ position_order = {"GK": 0, "DF": 1, "MF": 2, "FW": 3}
 if position_input != "All":
     p, s = position_sort[position_input]
     filtered = filtered.sort_values(by=[p, s], ascending=[False, False])
-
 elif club_input != "All":
     filtered["__pos"] = filtered["Position"].map(position_order)
     filtered["__main"] = filtered.apply(
@@ -176,7 +179,6 @@ elif club_input != "All":
     filtered["__abs"] = filtered.apply(
         lambda r: r[position_sort[r["Position"]][1]], axis=1
     )
-
     filtered = (
         filtered
         .sort_values(by=["__pos","__main","__abs"], ascending=[True, False, False])
