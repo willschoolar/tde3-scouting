@@ -62,16 +62,14 @@ def clear_stat_sliders():
 # ------------------------------
 # Reset button
 # ------------------------------
-def reset_all():
+st.sidebar.header("Filters")
+reset_clicked = st.sidebar.button("🔄 Reset all filters")
+if reset_clicked:
     st.session_state.club = "All"
     st.session_state.position = "All"
     clear_stat_sliders()
     st.session_state.table_key += 1
-    st.experimental_rerun()  # Force full refresh
-
-st.sidebar.header("Filters")
-if st.sidebar.button("🔄 Reset all filters"):
-    reset_all()
+    st.experimental_rerun()  # Trigger full refresh
 
 # ------------------------------
 # Club / Position filters
