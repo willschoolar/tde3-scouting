@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from collections import defaultdict
 
 # ------------------------------
 # Page setup
@@ -96,6 +97,16 @@ raw_club_map = {
 }
 
 # ------------------------------
+# Reverse mapping: Full name → all abbreviations
+# ------------------------------
+club_to_abbrs = defaultdict(list)
+for abbr, full in raw_club_map.items():
+    base_name = full.replace(" U21s", "")
+    club_to_abbrs[base_name].append(abbr)
+
+club_full_names = sorted(club_to_abbrs.keys())
+
+# ------------------------------
 # Session state
 # ------------------------------
 STAT_COLS = ["St","Tk","Ps","Sh","KAb","TAb","PAb","SAb"]
@@ -105,33 +116,35 @@ if "prev_club" not in st.session_state: st.session_state.prev_club = "All"
 if "prev_position" not in st.session_state: st.session_state.prev_position = "All"
 
 # ------------------------------
-# Sidebar Filters
+# Sidebar Filters (Reordered)
 # ------------------------------
 st.sidebar.header("Filters")
 
-# Reset all filters button
+# 1) Reset all filters
 if st.sidebar.button("Reset all filters"):
-    # Reset session state variables
     st.session_state.club = "All"
     st.session_state.position = "All"
     st.session_state.slider_key_version += 1
-    st.session_state.table_key += 1  # Force dataframe to re-render and reset sort
+    st.session_state.table_key += 1
 
-youth_filter = st.sidebar.checkbox("Youth Teams Only")
+# 2) Position filter
 position_input = st.sidebar.selectbox("Position", ["All","GK","DF","MF","FW"], key="position")
-youth_eligible_only = st.sidebar.checkbox("Youth Eligible Only")
 
-# Club dropdown
-if youth_filter:
-    available_clubs = sorted([abbr for abbr in df["Team"].unique() if abbr.startswith("y")])
-else:
-    available_clubs = sorted([abbr for abbr in df["Team"].unique() if not abbr.startswith("y")])
+# 3) Club dropdown
+club_input = st.sidebar.selectbox("Club", ["All"] + club_full_names, key="club")
 
-club_options = ["All"] + [abbr for abbr in available_clubs]
-club_input = st.sidebar.selectbox("Club", club_options, key="club")
+# 4) Include youth teams checkbox
 include_youths = st.sidebar.checkbox("Include youth teams for selected club?", value=True)
 
+# 5) Youth Teams Only
+youth_filter = st.sidebar.checkbox("Youth Teams Only")
+
+# 6) Youth Eligible Only
+youth_eligible_only = st.sidebar.checkbox("Youth Eligible Only")
+
+# ------------------------------
 # Reset sliders if club/position changed
+# ------------------------------
 if club_input != st.session_state.prev_club or position_input != st.session_state.prev_position:
     st.session_state.slider_key_version += 1
     st.session_state.table_key += 1
@@ -143,26 +156,16 @@ if club_input != st.session_state.prev_club or position_input != st.session_stat
 # ------------------------------
 base_filtered = df.copy()
 
-# ------------------------------
 # Club filtering
-# ------------------------------
-if club_input == "All":
+if club_input != "All":
+    abbrs = club_to_abbrs[club_input]
     if not include_youths:
-        # Only seniors
-        base_filtered = base_filtered[~base_filtered["Team"].str.startswith("y")]
+        abbrs = [a for a in abbrs if not a.startswith("y")]
+    base_filtered = base_filtered[base_filtered["Team"].isin(abbrs)]
 else:
-    # Always include the senior team
-    clubs_to_include = [club_input]
-
-    # Add youth teams if they exist in df
-    # Youth teams start with 'y' + first letter removed from senior abbr (e.g., 'yar' for 'ars')
-    youth_team_prefix = 'y' + club_input[1:]  # e.g., 'ars' -> 'yar'
-    if youth_team_prefix in df["Team"].values:
-        if include_youths:
-            clubs_to_include.append(youth_team_prefix)
-
-    base_filtered = base_filtered[base_filtered["Team"].isin(clubs_to_include)]
-
+    # All clubs
+    if not include_youths:
+        base_filtered = base_filtered[~base_filtered["Team"].str.startswith("y")]
 
 # Position filter
 if position_input != "All":
