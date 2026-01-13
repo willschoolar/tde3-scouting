@@ -76,8 +76,7 @@ raw_club_map = {
     "shu": "Sheffield United", "shw": "Sheffield Wednesday", "sou": "Southampton",
     "sto": "Stoke City", "wat": "Watford", "wba": "West Bromwich Albion",
     "wol": "Wolverhampton Wanderers", "bha": "Brighton and Hove Albion", "not": "Nottingham Forest",
-    "swi": "Swindon Town", "har": "Hartlepool United", "bri": "Brighton and Hove Albion",
-    "lee": "Leeds United", "swa": "Swansea City",
+    "swi": "Swindon Town", "har": "Hartlepool United", "lee": "Leeds United", "swa": "Swansea City",
     "yar": "Arsenal U21s", "yas": "Aston Villa U21s", "ybi": "Birmingham City U21s", 
     "ybo": "Bournemouth U21s", "ych": "Chelsea U21s", "yco": "Coventry City U21s",
     "yev": "Everton U21s", "yhu": "Hull City U21s", "yli": "Liverpool U21s",
@@ -96,25 +95,8 @@ raw_club_map = {
     "ywr": "Wrexham U21s"
 }
 
-raw_senior_to_youth = {
-    "ars": ["yar"], "ast": ["yas"], "bir": ["ybi"], "bla": ["ybl"], "bol": [],
-    "che": ["ych"], "der": ["yde"], "eve": ["yev"], "ful": ["yfu"], "liv": ["yli"],
-    "mnc": ["ymc"], "mnu": ["ymu"], "mid": ["ymi"], "new": ["yne"], "por": ["ypo"],
-    "rea": ["yre"], "sun": ["ysn"], "tot": ["yth"], "whu": ["ywh"], "wig": ["ywi"],
-    "bur": ["ybu"], "car": ["yca"], "cha": ["ycn"], "cov": ["yco"], "cry": ["ycr"],
-    "hul": ["yhu"], "ips": ["yip"], "lei": ["ylc"], "nor": ["yno"], "qpr": ["yqp"],
-    "scu": ["ysp"], "shu": ["ysu"], "shw": ["ysh"], "sou": ["yso"], "sto": ["yst"],
-    "wat": ["ywa"], "wba": ["ywb"], "wol": ["ywo"], "bha": ["ybh"], "not": ["ynf"],
-    "swi": ["ysw"], "har": ["yha"], "lee": ["yle"], "swa": ["ysc"]
-}
-
-all_teams = set(df["Team"].unique())
-club_map = {abbr: name for abbr, name in raw_club_map.items() if abbr in all_teams}
-senior_to_youth = {sen: [y for y in youth_list if y in all_teams] 
-                   for sen, youth_list in raw_senior_to_youth.items() if sen in all_teams}
-
 # ------------------------------
-# Session state helpers
+# Session state
 # ------------------------------
 STAT_COLS = ["St","Tk","Ps","Sh","KAb","TAb","PAb","SAb"]
 if "table_key" not in st.session_state: st.session_state.table_key = 0
@@ -123,15 +105,17 @@ if "prev_club" not in st.session_state: st.session_state.prev_club = "All"
 if "prev_position" not in st.session_state: st.session_state.prev_position = "All"
 
 # ------------------------------
-# Sidebar Filters & Reset
+# Sidebar Filters
 # ------------------------------
 st.sidebar.header("Filters")
 
+# Reset all filters button
 if st.sidebar.button("Reset all filters"):
     st.session_state.club = "All"
     st.session_state.position = "All"
     st.session_state.slider_key_version += 1
     st.session_state.table_key += 1
+    st.experimental_rerun()  # Full refresh to reset df sort and sliders
 
 youth_filter = st.sidebar.checkbox("Youth Teams Only")
 position_input = st.sidebar.selectbox("Position", ["All","GK","DF","MF","FW"], key="position")
@@ -143,15 +127,15 @@ if youth_filter:
 else:
     available_clubs = sorted([abbr for abbr in df["Team"].unique() if not abbr.startswith("y")])
 
-club_options = ["All"] + [club_map.get(abbr, abbr) for abbr in available_clubs]
-club_input_full = st.sidebar.selectbox("Club", club_options, key="club")
+club_options = ["All"] + [abbr for abbr in available_clubs]
+club_input = st.sidebar.selectbox("Club", club_options, key="club")
 include_youths = st.sidebar.checkbox("Include youth teams for selected club?", value=True)
 
 # Reset sliders if club/position changed
-if club_input_full != st.session_state.prev_club or position_input != st.session_state.prev_position:
+if club_input != st.session_state.prev_club or position_input != st.session_state.prev_position:
     st.session_state.slider_key_version += 1
     st.session_state.table_key += 1
-    st.session_state.prev_club = club_input_full
+    st.session_state.prev_club = club_input
     st.session_state.prev_position = position_input
 
 # ------------------------------
@@ -160,15 +144,16 @@ if club_input_full != st.session_state.prev_club or position_input != st.session
 base_filtered = df.copy()
 
 # Club filtering
-if club_input_full == "All":
+if club_input == "All":
     if not include_youths:
         base_filtered = base_filtered[~base_filtered["Team"].str.startswith("y")]
 else:
-    club_abbr = [abbr for abbr, full in club_map.items() if full == club_input_full]
-    club_abbr = club_abbr[0] if club_abbr else club_input_full
-    clubs_to_include = [club_abbr]
-    if include_youths and club_abbr in senior_to_youth:
-        clubs_to_include += senior_to_youth[club_abbr]
+    clubs_to_include = [club_input]
+    if include_youths:
+        # Add youth teams if exist
+        # we only include those present in df
+        youth_teams = [t for t in df["Team"].unique() if t.startswith("y") and t[1:] == club_input[1:]]
+        clubs_to_include += youth_teams
     base_filtered = base_filtered[base_filtered["Team"].isin(clubs_to_include)]
 
 # Position filter
@@ -212,7 +197,7 @@ position_order = {"GK":0,"DF":1,"MF":2,"FW":3}
 if position_input != "All":
     p,s = position_sort[position_input]
     filtered = filtered.sort_values(by=[p,s], ascending=[False,False])
-elif club_input_full != "All":
+elif club_input != "All":
     filtered["__pos"] = filtered["Position"].map(position_order)
     filtered["__main"] = filtered.apply(lambda r: r[position_sort[r["Position"]][0]], axis=1)
     filtered["__abs"] = filtered.apply(lambda r: r[position_sort[r["Position"]][1]], axis=1)
