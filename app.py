@@ -119,7 +119,7 @@ stat_filters = {}
 
 for col in STAT_COLS:
     if base_filtered.empty:
-        # No data, just set safe defaults
+        # No rows: safe dummy slider
         stat_filters[col] = (0, 0)
         st.sidebar.slider(
             f"{col} range",
@@ -133,9 +133,10 @@ for col in STAT_COLS:
     min_val = int(base_filtered[col].min())
     max_val = int(base_filtered[col].max())
 
-    # Safe default assignment
+    # Assign default
     stat_filters[col] = (min_val, max_val)
 
+    # Disabled if min==max
     if min_val == max_val:
         st.sidebar.slider(
             f"{col} range",
@@ -151,6 +152,7 @@ for col in STAT_COLS:
             max_val,
             key=f"{col}_range"
         )
+
 
 
 # Force table remount on filter change
