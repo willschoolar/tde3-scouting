@@ -117,7 +117,9 @@ if st.sidebar.button("Reset all filters"):
     st.session_state.slider_key_version += 1
     st.session_state.table_key += 1  # Force dataframe to re-render and reset sort
 
+youth_filter = st.sidebar.checkbox("Youth Teams Only")
 position_input = st.sidebar.selectbox("Position", ["All","GK","DF","MF","FW"], key="position")
+youth_eligible_only = st.sidebar.checkbox("Youth Eligible Only")
 
 # Club dropdown
 if youth_filter:
@@ -128,8 +130,6 @@ else:
 club_options = ["All"] + [abbr for abbr in available_clubs]
 club_input = st.sidebar.selectbox("Club", club_options, key="club")
 include_youths = st.sidebar.checkbox("Include youth teams for selected club?", value=True)
-youth_filter = st.sidebar.checkbox("Youth Teams Only")
-youth_eligible_only = st.sidebar.checkbox("Youth Eligible Only")
 
 # Reset sliders if club/position changed
 if club_input != st.session_state.prev_club or position_input != st.session_state.prev_position:
