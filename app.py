@@ -36,28 +36,39 @@ df["Age"] = df["Age"].astype(int)
 # Assign Position
 # --------------------------------------------------
 def assign_position(row):
-    stats = {
-        "GK": row["St"],
-        "DF": row["Tk"],
-        "MF": row["Ps"],
-        "FW": row["Sh"]
-    }
-    return max(stats, key=stats.get)
+    return max(
+        {"GK": row["St"], "DF": row["Tk"], "MF": row["Ps"], "FW": row["Sh"]},
+        key=lambda k: {"GK": row["St"], "DF": row["Tk"], "MF": row["Ps"], "FW": row["Sh"]}[k]
+    )
 
 df["Position"] = df.apply(assign_position, axis=1)
 
 # --------------------------------------------------
-# Reset logic
+# Session helpers
 # --------------------------------------------------
-def reset_filters():
-    st.session_state.club = "All"
-    st.session_state.position = "All"
-    for col in ["St","Tk","Ps","Sh","KAb","TAb","PAb","SAb"]:
+STAT_COLS = ["St","Tk","Ps","Sh","KAb","TAb","PAb","SAb"]
+
+def clear_stat_sliders():
+    for col in STAT_COLS:
         st.session_state.pop(f"{col}_range", None)
-    st.session_state.table_key += 1
+
+if "prev_club" not in st.session_state:
+    st.session_state.prev_club = "All"
+
+if "prev_position" not in st.session_state:
+    st.session_state.prev_position = "All"
 
 if "table_key" not in st.session_state:
     st.session_state.table_key = 0
+
+# --------------------------------------------------
+# Reset logic
+# --------------------------------------------------
+def reset_all():
+    st.session_state.club = "All"
+    st.session_state.position = "All"
+    clear_stat_sliders()
+    st.session_state.table_key += 1
 
 # --------------------------------------------------
 # Sidebar
@@ -65,15 +76,32 @@ if "table_key" not in st.session_state:
 st.sidebar.header("Filters")
 
 if st.sidebar.button("🔄 Reset all filters"):
-    reset_filters()
+    reset_all()
     st.rerun()
 
-club_options = ["All"] + sorted(df["Team"].unique())
-club_input = st.sidebar.selectbox("Club", club_options, key="club")
+club_input = st.sidebar.selectbox(
+    "Club",
+    ["All"] + sorted(df["Team"].unique()),
+    key="club"
+)
 
 position_input = st.sidebar.selectbox(
-    "Position", ["All","GK","DF","MF","FW"], key="position"
+    "Position",
+    ["All","GK","DF","MF","FW"],
+    key="position"
 )
+
+# --------------------------------------------------
+# Reset sliders if base filters changed
+# --------------------------------------------------
+if (
+    club_input != st.session_state.prev_club
+    or position_input != st.session_state.prev_position
+):
+    clear_stat_sliders()
+    st.session_state.prev_club = club_input
+    st.session_state.prev_position = position_input
+    st.session_state.table_key += 1
 
 # --------------------------------------------------
 # Base filtering (Club + Position only)
@@ -89,21 +117,11 @@ if position_input != "All":
 # --------------------------------------------------
 # Dynamic sliders (SAFE)
 # --------------------------------------------------
-stat_sliders = {}
+stat_filters = {}
 
-for col in ["St","Tk","Ps","Sh","KAb","TAb","PAb","SAb"]:
+for col in STAT_COLS:
     min_val = int(base_filtered[col].min())
     max_val = int(base_filtered[col].max())
-
-    # Initialize once
-    if f"{col}_range" not in st.session_state:
-        st.session_state[f"{col}_range"] = (min_val, max_val)
-
-    # Clamp values
-    cur_min, cur_max = st.session_state[f"{col}_range"]
-    cur_min = max(min_val, cur_min)
-    cur_max = min(max_val, cur_max)
-    st.session_state[f"{col}_range"] = (cur_min, cur_max)
 
     if min_val == max_val:
         st.sidebar.slider(
@@ -113,30 +131,27 @@ for col in ["St","Tk","Ps","Sh","KAb","TAb","PAb","SAb"]:
             disabled=True,
             key=f"{col}_range"
         )
-        stat_sliders[col] = (min_val, max_val)
+        stat_filters[col] = (min_val, max_val)
     else:
-        stat_sliders[col] = st.sidebar.slider(
+        stat_filters[col] = st.sidebar.slider(
             f"{col} range",
             min_val,
             max_val,
             key=f"{col}_range"
         )
 
-# Force table remount when filters change
-st.session_state.table_key += 1
-
 # --------------------------------------------------
 # Apply stat filters
 # --------------------------------------------------
 filtered = base_filtered.copy()
 
-for col, (lo, hi) in stat_sliders.items():
+for col, (lo, hi) in stat_filters.items():
     filtered = filtered[(filtered[col] >= lo) & (filtered[col] <= hi)]
 
-filtered_display = filtered.reset_index(drop=True).copy()
+filtered = filtered.reset_index(drop=True)
 
 for col in numeric_cols:
-    filtered_display[col] = filtered_display[col].astype(int)
+    filtered[col] = filtered[col].astype(int)
 
 # --------------------------------------------------
 # Sorting logic
@@ -147,41 +162,34 @@ position_sort = {
     "MF": ("Ps","PAb"),
     "FW": ("Sh","SAb")
 }
-pos_order = {"GK": 0, "DF": 1, "MF": 2, "FW": 3}
+position_order = {"GK": 0, "DF": 1, "MF": 2, "FW": 3}
 
 if position_input != "All":
     p, s = position_sort[position_input]
-    filtered_display = filtered_display.sort_values(
-        by=[p, s], ascending=[False, False]
-    )
+    filtered = filtered.sort_values(by=[p, s], ascending=[False, False])
+
 elif club_input != "All":
-    filtered_display["__pos"] = filtered_display["Position"].map(pos_order)
-    filtered_display["__main"] = filtered_display.apply(
-        lambda r: position_sort[r["Position"]][0], axis=1
-    )
-    filtered_display["__val"] = filtered_display.apply(
+    filtered["__pos"] = filtered["Position"].map(position_order)
+    filtered["__main"] = filtered.apply(
         lambda r: r[position_sort[r["Position"]][0]], axis=1
     )
-    filtered_display["__ab"] = filtered_display.apply(
+    filtered["__abs"] = filtered.apply(
         lambda r: r[position_sort[r["Position"]][1]], axis=1
     )
 
-    filtered_display = (
-        filtered_display
-        .sort_values(
-            by=["__pos","__val","__ab"],
-            ascending=[True, False, False]
-        )
-        .drop(columns=["__pos","__main","__val","__ab"])
+    filtered = (
+        filtered
+        .sort_values(by=["__pos","__main","__abs"], ascending=[True, False, False])
+        .drop(columns=["__pos","__main","__abs"])
     )
 
-filtered_display = filtered_display.reset_index(drop=True)
+filtered = filtered.reset_index(drop=True)
 
 # --------------------------------------------------
 # Counts
 # --------------------------------------------------
 st.write(f"Total players loaded: {len(df)}")
-st.write(f"Players after filtering: {len(filtered_display)}")
+st.write(f"Players after filtering: {len(filtered)}")
 
 # --------------------------------------------------
 # Styling
@@ -212,7 +220,7 @@ VISIBLE_ROWS = 30
 TABLE_HEIGHT = ROW_HEIGHT * VISIBLE_ROWS + 50
 
 st.dataframe(
-    filtered_display,
+    filtered,
     use_container_width=True,
     height=TABLE_HEIGHT,
     key=f"table_{st.session_state.table_key}"
