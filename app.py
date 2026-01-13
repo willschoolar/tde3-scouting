@@ -55,17 +55,15 @@ if "table_key" not in st.session_state:
 
 def clear_stat_sliders():
     for col in STAT_COLS:
-        if f"{col}_range" in st.session_state:
-            del st.session_state[f"{col}_range"]
+        slider_key = f"{col}_range"
+        if slider_key in st.session_state:
+            del st.session_state[slider_key]
 
-# ------------------------------
-# Reset button
-# ------------------------------
 def reset_all():
     st.session_state.club = "All"
     st.session_state.position = "All"
-    clear_stat_sliders()
-    st.session_state.table_key += 1
+    clear_stat_sliders()           # <- Clear all sliders
+    st.session_state.table_key += 1  # <- Force table to re-render
 
 st.sidebar.header("Filters")
 if st.sidebar.button("🔄 Reset all filters"):
