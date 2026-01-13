@@ -125,24 +125,39 @@ position_sort_map = {
     "FW": ("Sh","SAb")
 }
 
-if club_input != "All":
+# --- SORTING LOGIC ---
+if position_input != "All":
+    # Sort ONLY by the selected position's stats
+    primary, secondary = position_sort_map[position_input]
+    filtered_display = (
+        filtered_display
+        .sort_values(by=[primary, secondary], ascending=[False, False])
+        .reset_index(drop=True)
+    )
+
+elif club_input != "All":
+    # Sort by position order, then relevant stats
     filtered_display["pos_order"] = filtered_display["Position"].map(position_order)
     filtered_display["primary"] = filtered_display.apply(
+        lambda r: position_sort_map[r["Position"]][0], axis=1
+    )
+    filtered_display["primary_val"] = filtered_display.apply(
         lambda r: r[position_sort_map[r["Position"]][0]], axis=1
     )
-    filtered_display["secondary"] = filtered_display.apply(
+    filtered_display["secondary_val"] = filtered_display.apply(
         lambda r: r[position_sort_map[r["Position"]][1]], axis=1
     )
 
     filtered_display = (
         filtered_display
         .sort_values(
-            by=["pos_order","primary","secondary"],
+            by=["pos_order", "primary_val", "secondary_val"],
             ascending=[True, False, False]
         )
-        .drop(columns=["pos_order","primary","secondary"])
+        .drop(columns=["pos_order", "primary", "primary_val", "secondary_val"])
         .reset_index(drop=True)
     )
+
 
 # ----------------------------
 # Counts
