@@ -175,18 +175,26 @@ if club_input != st.session_state.prev_club or position_input != st.session_stat
 # ------------------------------
 base_filtered = df.copy()
 
+# ------------------------------
 # Club filtering
+# ------------------------------
 if club_input == "All":
     if not include_youths:
+        # Only seniors
         base_filtered = base_filtered[~base_filtered["Team"].str.startswith("y")]
 else:
+    # Always include the senior team
     clubs_to_include = [club_input]
-    if include_youths:
-        # Add youth teams if exist
-        # we only include those present in df
-        youth_teams = [t for t in df["Team"].unique() if t.startswith("y") and t[1:] == club_input[1:]]
-        clubs_to_include += youth_teams
+
+    # Add youth teams if they exist in df
+    # Youth teams start with 'y' + first letter removed from senior abbr (e.g., 'yar' for 'ars')
+    youth_team_prefix = 'y' + club_input[1:]  # e.g., 'ars' -> 'yar'
+    if youth_team_prefix in df["Team"].values:
+        if include_youths:
+            clubs_to_include.append(youth_team_prefix)
+
     base_filtered = base_filtered[base_filtered["Team"].isin(clubs_to_include)]
+
 
 # Position filter
 if position_input != "All":
