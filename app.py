@@ -113,29 +113,32 @@ if position_input != "All":
     base_filtered = base_filtered[base_filtered["Position"] == position_input]
 
 # --------------------------------------------------
-# Dynamic sliders (bulletproof)
+# Slider ranges (full dataset)
 # --------------------------------------------------
+SLIDER_RANGES = {}
+for col in STAT_COLS:
+    min_val = int(df[col].min())
+    max_val = int(df[col].max())
+    SLIDER_RANGES[col] = (min_val, max_val)
+
 stat_filters = {}
 
 for col in STAT_COLS:
-    if base_filtered.empty:
-        min_val, max_val = 0, 0
-    else:
-        min_val = int(base_filtered[col].min())
-        max_val = int(base_filtered[col].max())
+    min_val, max_val = SLIDER_RANGES[col]
 
-    # Assign tuple first
+    # Step 250 for abilities, 1 for other stats
+    step = 250 if col in ["KAb","TAb","PAb","SAb"] else 1
+
+    # Assign tuple
     stat_filters[col] = (min_val, max_val)
 
-    # Disabled if min == max
-    disabled = (min_val == max_val)
-
-    # Create slider without forcing value to avoid session_state conflicts
-    st.sidebar.slider(
+    # Create slider
+    stat_filters[col] = st.sidebar.slider(
         f"{col} range",
         min_val,
         max_val,
-        disabled=disabled,
+        value=(min_val, max_val),
+        step=step,
         key=f"{col}_range"
     )
 
