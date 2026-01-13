@@ -81,6 +81,11 @@ position_input = st.sidebar.selectbox(
 )
 
 # ------------------------------
+# Compact Mobile View Toggle
+# ------------------------------
+compact_mobile = st.sidebar.checkbox("📱 Compact Mobile View", value=False)
+
+# ------------------------------
 # Reset sliders if Club/Position changed
 # ------------------------------
 if club_input != st.session_state.prev_club or position_input != st.session_state.prev_position:
@@ -163,20 +168,26 @@ st.write(f"Players after filtering: {len(filtered)}")
 # ------------------------------
 # Table styling
 # ------------------------------
-st.markdown("""
+if compact_mobile:
+    row_height = 20  # smaller row height
+    min_player_width = 120  # Player column narrower
+else:
+    row_height = 30
+    min_player_width = 160
+
+st.markdown(f"""
 <style>
-div[data-testid="stDataFrame"] table { table-layout: fixed; }
-div[data-testid="stDataFrame"] th, div[data-testid="stDataFrame"] td { text-align: center; white-space: nowrap; }
-div[data-testid="stDataFrame"] td:nth-child(2), div[data-testid="stDataFrame"] th:nth-child(2) { text-align: left; min-width: 160px; }
+div[data-testid="stDataFrame"] table {{ table-layout: fixed; }}
+div[data-testid="stDataFrame"] th, div[data-testid="stDataFrame"] td {{ text-align: center; white-space: nowrap; }}
+div[data-testid="stDataFrame"] td:nth-child(2), div[data-testid="stDataFrame"] th:nth-child(2) {{ text-align: left; min-width: {min_player_width}px; }}
 </style>
 """, unsafe_allow_html=True)
 
 # ------------------------------
 # Display table
 # ------------------------------
-ROW_HEIGHT = 30
 VISIBLE_ROWS = 30
-TABLE_HEIGHT = ROW_HEIGHT * VISIBLE_ROWS + 50
+TABLE_HEIGHT = row_height * VISIBLE_ROWS + 50
 
 st.dataframe(
     filtered,
@@ -184,3 +195,4 @@ st.dataframe(
     height=TABLE_HEIGHT,
     key=f"table_{st.session_state.table_key}"
 )
+
