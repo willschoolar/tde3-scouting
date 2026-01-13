@@ -9,17 +9,14 @@ DATA_URL = "https://www.tde3.co.uk/season33/all_plrs.txt"
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv(
-        DATA_URL,
-        sep=r"\s+",
-        header=None
-    )
+    df = pd.read_fwf(DATA_URL, header=None)
     df = df.iloc[:, :13]
     df.columns = [
         "Team", "Age", "Nat", "St", "Tk", "Ps", "Sh",
         "Ag", "KAb", "TAb", "PAb", "SAb", "X"
     ]
     return df
+
 
 df = load_data()
 
