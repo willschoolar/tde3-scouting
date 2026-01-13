@@ -120,15 +120,38 @@ if st.sidebar.button("Reset all filters"):
 # 2) Position filter
 position_input = st.sidebar.selectbox("Position", ["All","GK","DF","MF","FW"], key="position")
 
-# 3) Club dropdown
-# Club list updates dynamically based on youth filter
+# ------------------------------
+# 3) Club dropdown (full names in dropdown, use abbr for filtering)
+# ------------------------------
+# Build list of available clubs based on youth filter
 if st.session_state.get("youth_filter", False):
-    available_clubs = sorted([abbr for abbr in df["Team"].unique() if abbr.startswith("y")])
+    available_abbrs = sorted([abbr for abbr in df["Team"].unique() if abbr.startswith("y")])
 else:
-    available_clubs = sorted([abbr for abbr in df["Team"].unique() if not abbr.startswith("y")])
+    available_abbrs = sorted([abbr for abbr in df["Team"].unique() if not abbr.startswith("y")])
 
-club_options = ["All"] + [abbr for abbr in available_clubs]
-club_input = st.sidebar.selectbox("Club", club_options, key="club")
+# Filter only those found in raw_club_map (optional, to remove redundant clubs)
+available_abbrs = [abbr for abbr in available_abbrs if abbr in raw_club_map]
+
+# Map abbr -> full name for display
+club_options_dict = {"All": "All Players"}
+for abbr in available_abbrs:
+    club_options_dict[abbr] = raw_club_map.get(abbr, abbr)
+
+# Dropdown: display names but store abbr
+club_input_display = st.sidebar.selectbox(
+    "Club",
+    options=list(club_options_dict.values()),
+    index=0,
+    key="club_display"
+)
+
+# Map selected display name back to abbreviation for filtering
+if club_input_display == "All Players":
+    club_input = "All"
+else:
+    # reverse lookup: get the key (abbr) from the selected value
+    club_input = [k for k, v in club_options_dict.items() if v == club_input_display][0]
+
 
 # 4) Include youth teams for selected club
 include_youths = st.sidebar.checkbox("Include youth teams for selected club?", value=True)
