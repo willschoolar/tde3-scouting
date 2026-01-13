@@ -118,19 +118,20 @@ st.write(f"Players after filtering: {len(filtered_display)}")
 # ----------------------------
 # Alternate row colors and header color
 def style_table(df):
-    # Alternate row colors
-    row_colors = ['background-color: #f9f9f9' if i % 2 else '' for i in range(len(df))]
     # Header style
     header_styles = [{'selector': 'th', 'props': [('background-color', '#4CAF50'),
                                                  ('color', 'white'),
                                                  ('text-align', 'center')]}]
-    # Apply styles
-    styled = df.style.apply(lambda x: row_colors, axis=1) \
+    # Apply alternating row colors
+    def row_color(x):
+        return ['background-color: #f9f9f9' if i%2 else '' for i in range(len(x))]
+    
+    styled = df.style.apply(row_color, axis=None) \
                      .set_table_styles(header_styles) \
-                     .set_properties(**{'text-align': 'center'})
-    # Left-align Player column
-    styled = styled.set_properties(subset=['Player'], **{'text-align': 'left'})
+                     .set_properties(**{'text-align': 'center'}) \
+                     .set_properties(subset=['Player'], **{'text-align': 'left'})
     return styled
+
 
 styled_df = style_table(filtered_display)
 st.dataframe(styled_df, use_container_width=True)
