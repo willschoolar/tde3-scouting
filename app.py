@@ -84,7 +84,7 @@ raw_senior_to_youth = {
     "hul": ["yhu"], "ips": ["yip"], "lei": ["ylc"], "nor": ["yno"], "qpr": ["yqp"],
     "scu": ["ysp"], "shu": ["ysu"], "shw": ["ysh"], "sou": ["yso"], "sto": ["yst"],
     "wat": ["ywa"], "wba": ["ywb"], "wol": ["ywo"], "bha": ["ybh"], "not": ["ynf"],
-    "swi": ["ysw"], "har": ["yha"], "bri": [], "lee": ["yle"], "swa": ["ysc"]
+    "wre": ["ywr"], "bou": ["ybo"], "bre": ["ybr"], "lee": ["yle"], "swa": ["ysc"]
 }
 
 # Only keep teams actually present in all_plrs.txt
