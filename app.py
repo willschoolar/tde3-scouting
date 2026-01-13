@@ -112,4 +112,8 @@ st.markdown(
 # ----------------------------
 # Display table
 # ----------------------------
-st.dataframe(filtered_display, use_container_width=True)
+# Show all rows up to 25-30, max height 800px
+row_height = 25
+table_height = min(800, len(filtered_display)*row_height + 50)
+st.dataframe(filtered_display, use_container_width=True, height=table_height)
+
