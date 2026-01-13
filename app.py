@@ -66,7 +66,7 @@ if position_input != "All":
 for col,(min_val,max_val) in stat_sliders.items():
     filtered = filtered[(filtered[col]>=min_val)&(filtered[col]<=max_val)]
 
-# Reset index
+# Reset index to remove row numbers
 filtered_display = filtered.reset_index(drop=True).copy()
 for col in numeric_cols:
     filtered_display[col] = filtered_display[col].astype(int)
@@ -80,7 +80,6 @@ position_sort_map = {
     "MF": ("Ps","PAb"),
     "FW": ("Sh","SAb")
 }
-
 if position_input in position_sort_map:
     primary, secondary = position_sort_map[position_input]
     filtered_display = filtered_display.sort_values(
@@ -94,26 +93,21 @@ st.write(f"Total players loaded: {len(df)}")
 st.write(f"Players after filtering: {len(filtered_display)}")
 
 # ----------------------------
-# Mobile-friendly styling
+# Mobile-friendly CSS
 # ----------------------------
-# Center numeric columns using CSS
-st.markdown(
-    """
-    <style>
-    div[data-testid="stDataFrame"] table {table-layout: fixed;}
-    div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {
-        text-align: center;
-    }
-    div[data-testid="stDataFrame"] td:nth-child(2) {text-align: left;} /* Player left-aligned */
-    </style>
-    """, unsafe_allow_html=True
-)
+st.markdown("""
+<style>
+div[data-testid="stDataFrame"] table {table-layout: fixed;}
+div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {text-align: center;}
+div[data-testid="stDataFrame"] td:nth-child(2) {text-align: left;} /* Player left-aligned */
+</style>
+""", unsafe_allow_html=True)
 
 # ----------------------------
-# Display table
+# Display table with dynamic height
 # ----------------------------
-# Show all rows up to 25-30, max height 800px
-row_height = 25
-table_height = min(800, len(filtered_display)*row_height + 50)
+row_height_px = 30  # pixels per row
+max_height = 800    # maximum table height in px
+table_height = min(max_height, len(filtered_display)*row_height_px + 50)  # add header height
+
 st.dataframe(filtered_display, use_container_width=True, height=table_height)
-
