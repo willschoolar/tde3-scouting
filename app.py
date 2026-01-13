@@ -40,6 +40,28 @@ def assign_position(row):
 df["Position"] = df.apply(assign_position, axis=1)
 
 # ------------------------------
+# Youth eligibility rules & function
+# ------------------------------
+YOUTH_RULES = [
+    (22, 100, 19, 17, 17, 19),  # 22+
+    (19, 21, 20, 18, 18, 20),   # 19-21
+    (0, 18, 22, 20, 20, 22)     # 0-18
+]
+
+def is_youth_eligible(row):
+    age = row["Age"]
+    pos = row["Position"]
+    pos_col = {"GK": "St", "DF": "Tk", "MF": "Ps", "FW": "Sh"}[pos]
+    for (age_min, age_max, max_gk, max_df, max_mf, max_fw) in YOUTH_RULES:
+        if age_min <= age <= age_max:
+            max_skill = {"GK": max_gk, "DF": max_df, "MF": max_mf, "FW": max_fw}[pos]
+            return row[pos_col] <= max_skill
+    return False
+
+# Add Youth Eligible column
+df["Youth Eligible"] = df.apply(lambda r: "Yes" if is_youth_eligible(r) else "No", axis=1)
+
+# ------------------------------
 # Club mapping (abbr → full name)
 # ------------------------------
 raw_club_map = {
@@ -111,8 +133,9 @@ if st.sidebar.button("Reset all filters"):
     st.session_state.slider_key_version += 1
     st.session_state.table_key += 1
 
-# Youth-only filter
 youth_filter = st.sidebar.checkbox("Youth Teams Only")
+position_input = st.sidebar.selectbox("Position", ["All","GK","DF","MF","FW"], key="position")
+youth_eligible_only = st.sidebar.checkbox("Youth Eligible Only")
 
 # Club dropdown
 if youth_filter:
@@ -122,26 +145,7 @@ else:
 
 club_options = ["All"] + [club_map.get(abbr, abbr) for abbr in available_clubs]
 club_input_full = st.sidebar.selectbox("Club", club_options, key="club")
-
-# Map back to abbreviation
-if club_input_full == "All":
-    club_abbr = "All"
-else:
-    club_abbr = [abbr for abbr, full in club_map.items() if full == club_input_full]
-    club_abbr = club_abbr[0] if club_abbr else club_input_full
-
-# Include youth toggle
 include_youths = st.sidebar.checkbox("Include youth teams for selected club?", value=True)
-
-# Position filter
-position_input = st.sidebar.selectbox(
-    "Position",
-    ["All","GK","DF","MF","FW"],
-    key="position"
-)
-
-# Youth eligible filter
-youth_eligible_only = st.sidebar.checkbox("Youth Eligible Only")
 
 # Reset sliders if club/position changed
 if club_input_full != st.session_state.prev_club or position_input != st.session_state.prev_position:
@@ -151,49 +155,36 @@ if club_input_full != st.session_state.prev_club or position_input != st.session
     st.session_state.prev_position = position_input
 
 # ------------------------------
-# Base filtering
+# Filtering logic
 # ------------------------------
 base_filtered = df.copy()
 
-if club_abbr == "All":
+# Club filtering
+if club_input_full == "All":
     if not include_youths:
         base_filtered = base_filtered[~base_filtered["Team"].str.startswith("y")]
 else:
+    club_abbr = [abbr for abbr, full in club_map.items() if full == club_input_full]
+    club_abbr = club_abbr[0] if club_abbr else club_input_full
     clubs_to_include = [club_abbr]
     if include_youths and club_abbr in senior_to_youth:
         clubs_to_include += senior_to_youth[club_abbr]
     base_filtered = base_filtered[base_filtered["Team"].isin(clubs_to_include)]
 
+# Position filter
 if position_input != "All":
     base_filtered = base_filtered[base_filtered["Position"] == position_input]
 
+# Youth Teams only
 if youth_filter:
     base_filtered = base_filtered[base_filtered["Team"].str.startswith("y")]
 
-# ------------------------------
-# Youth eligible logic
-# ------------------------------
-YOUTH_RULES = [
-    (22, 100, 19, 17, 17, 19),  # 22+
-    (19, 21, 20, 18, 18, 20),   # 19-21
-    (0, 18, 22, 20, 20, 22)     # 0-18
-]
-
-def is_youth_eligible(row):
-    age = row["Age"]
-    pos = row["Position"]
-    pos_col = {"GK": "St", "DF": "Tk", "MF": "Ps", "FW": "Sh"}[pos]
-    for (age_min, age_max, max_gk, max_df, max_mf, max_fw) in YOUTH_RULES:
-        if age_min <= age <= age_max:
-            max_skill = {"GK": max_gk, "DF": max_df, "MF": max_mf, "FW": max_fw}[pos]
-            return row[pos_col] <= max_skill
-    return False
-
+# Youth Eligible filter
 if youth_eligible_only:
     base_filtered = base_filtered[base_filtered.apply(is_youth_eligible, axis=1)]
 
 # ------------------------------
-# Sliders
+# Stat sliders
 # ------------------------------
 SLIDER_RANGES = {col:(int(df[col].min()), int(df[col].max())) for col in STAT_COLS}
 stat_filters = {}
@@ -201,18 +192,9 @@ for col in STAT_COLS:
     min_val, max_val = SLIDER_RANGES[col]
     step = 250 if col in ["KAb","TAb","PAb","SAb"] else 1
     slider_key = f"{col}_range_v{st.session_state.slider_key_version}"
-    stat_filters[col] = st.sidebar.slider(
-        f"{col} range",
-        min_val,
-        max_val,
-        value=(min_val,max_val),
-        step=step,
-        key=slider_key
-    )
+    stat_filters[col] = st.sidebar.slider(f"{col} range", min_val, max_val, (min_val,max_val), step=step, key=slider_key)
 
-# ------------------------------
 # Apply stat filters
-# ------------------------------
 filtered = base_filtered.copy()
 for col, (lo, hi) in stat_filters.items():
     filtered = filtered[(filtered[col] >= lo) & (filtered[col] <= hi)]
@@ -222,7 +204,7 @@ for col in numeric_cols:
     filtered[col] = filtered[col].astype(int)
 
 # ------------------------------
-# Sorting logic
+# Sorting
 # ------------------------------
 position_sort = {"GK":("St","KAb"), "DF":("Tk","TAb"), "MF":("Ps","PAb"), "FW":("Sh","SAb")}
 position_order = {"GK":0,"DF":1,"MF":2,"FW":3}
@@ -230,7 +212,7 @@ position_order = {"GK":0,"DF":1,"MF":2,"FW":3}
 if position_input != "All":
     p,s = position_sort[position_input]
     filtered = filtered.sort_values(by=[p,s], ascending=[False,False])
-elif club_abbr != "All":
+elif club_input_full != "All":
     filtered["__pos"] = filtered["Position"].map(position_order)
     filtered["__main"] = filtered.apply(lambda r: r[position_sort[r["Position"]][0]], axis=1)
     filtered["__abs"] = filtered.apply(lambda r: r[position_sort[r["Position"]][1]], axis=1)
@@ -246,7 +228,7 @@ st.write(f"Total players loaded: {len(df)}")
 st.write(f"Players after filtering: {len(filtered)}")
 
 # ------------------------------
-# Table styling
+# Styling
 # ------------------------------
 st.markdown("""
 <style>
@@ -257,7 +239,7 @@ div[data-testid="stDataFrame"] td:nth-child(2), div[data-testid="stDataFrame"] t
 """, unsafe_allow_html=True)
 
 # ------------------------------
-# Display table
+# Display
 # ------------------------------
 ROW_HEIGHT = 30
 VISIBLE_ROWS = 30
