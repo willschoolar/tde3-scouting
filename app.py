@@ -1,16 +1,19 @@
 import streamlit as st
 import pandas as pd
-from st_aggrid import AgGrid, GridOptionsBuilder
 
+# ----------------------------
 # Page setup
+# ----------------------------
 st.set_page_config(page_title="TDE3 Scouting Tool", layout="wide")
 st.title("TDE3 Scouting Tool")
 
-# URL to the player data
+# ----------------------------
+# Data URL
+# ----------------------------
 DATA_URL = "https://www.tde3.co.uk/season33/all_plrs.txt"
 
 # ----------------------------
-# Load and clean data
+# Load data
 # ----------------------------
 @st.cache_data
 def load_data():
@@ -55,7 +58,7 @@ df["Age"] = df["Age"].astype(int)
 # ----------------------------
 st.sidebar.header("Filters")
 
-# Hard-coded safe age range slider
+# Age slider
 age_min, age_max = st.sidebar.slider(
     "Age",
     min_value=15,
@@ -63,36 +66,27 @@ age_min, age_max = st.sidebar.slider(
     value=(18, 30)
 )
 
-# Apply age filter
+# Apply filter
 filtered = df[
     (df["Age"] >= age_min) &
     (df["Age"] <= age_max)
 ]
 
 # ----------------------------
-# Display table using AgGrid
+# Display counts
+# ----------------------------
+st.write(f"Total players loaded: {len(df)}")
+st.write(f"Players after filtering: {len(filtered)}")
+
+# ----------------------------
+# Display table
 # ----------------------------
 # Reset index to remove row numbers
-# Reset index
 filtered_display = filtered.reset_index(drop=True)
 
-# Build AgGrid options
-gb = GridOptionsBuilder.from_dataframe(filtered_display)
-gb.configure_default_column(resizable=True, filter=True, flex=1)  # flex added
-numeric_cols = ["Age","St","Tk","Ps","Sh","Ag","KAb","TAb","PAb","SAb"]
-
+# Convert numeric columns to integers for display
 for col in numeric_cols:
-    gb.configure_column(col, type=["numericColumn"], cellStyle={"textAlign": "center"})
+    filtered_display[col] = filtered_display[col].astype(int)
 
-gb.configure_column("Player", cellStyle={"textAlign": "left"})
-
-gridOptions = gb.build()
-
-# Display AgGrid with auto height
-AgGrid(
-    filtered_display,
-    gridOptions=gridOptions,
-    enable_enterprise_modules=False,
-    domLayout='autoHeight',
-    fit_columns_on_grid_load=True
-)
+# Show the table
+st.table(filtered_display)
