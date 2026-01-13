@@ -73,12 +73,17 @@ st.write("Total players loaded:", len(df))
 st.write("Players after filtering:", len(filtered))
 
 # Align columns: Player left, everything else center
-styled = filtered.style.set_properties(
-    **{"text-align": "center"}
-).set_properties(
-    subset=["Player"],
-    **{"text-align": "left"}
+# Format numeric columns as integers
+numeric_cols = ["Age", "St", "Tk", "Ps", "Sh", "Ag",
+                "KAb", "TAb", "PAb", "SAb"]
+
+styled = (
+    filtered.style
+    .set_properties(**{"text-align": "center"})
+    .set_properties(subset=["Player"], **{"text-align": "left"})
+    .format({col: "{:.0f}" for col in numeric_cols})
 )
+
 
 st.dataframe(
     styled,
