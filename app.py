@@ -65,11 +65,21 @@ def clear_stat_sliders():
 st.sidebar.header("Filters")
 reset_clicked = st.sidebar.button("🔄 Reset all filters")
 if reset_clicked:
+    # Reset Club and Position
     st.session_state.club = "All"
     st.session_state.position = "All"
-    clear_stat_sliders()
+
+    # Clear all slider keys
+    for col in STAT_COLS:
+        key = f"{col}_range"
+        if key in st.session_state:
+            del st.session_state[key]
+
+    # Increment table_key to force table refresh
     st.session_state.table_key += 1
-    st.experimental_rerun()  # Trigger full refresh
+
+    # No st.experimental_rerun() needed — Streamlit will automatically re-run
+
 
 # ------------------------------
 # Club / Position filters
