@@ -105,14 +105,14 @@ if "prev_position" not in st.session_state: st.session_state.prev_position = "Al
 # ------------------------------
 st.sidebar.header("Filters")
 
-if st.sidebar.button("🔄 Reset all filters"):
+if st.sidebar.button("Reset all filters"):
     st.session_state.club = "All"
     st.session_state.position = "All"
     st.session_state.slider_key_version += 1
     st.session_state.table_key += 1
 
 # Youth-only filter
-youth_filter = st.sidebar.checkbox("👶 Youth Teams Only")
+youth_filter = st.sidebar.checkbox("Youth Teams Only")
 
 # Club dropdown
 if youth_filter:
@@ -141,7 +141,7 @@ position_input = st.sidebar.selectbox(
 )
 
 # Youth eligible filter
-youth_eligible_only = st.sidebar.checkbox("🎯 Youth Eligible Only")
+youth_eligible_only = st.sidebar.checkbox("Youth Eligible Only")
 
 # Reset sliders if club/position changed
 if club_input_full != st.session_state.prev_club or position_input != st.session_state.prev_position:
