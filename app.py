@@ -118,40 +118,26 @@ if position_input != "All":
 stat_filters = {}
 
 for col in STAT_COLS:
+    # Base filtered dataframe may be empty
     if base_filtered.empty:
-        # No rows: safe dummy slider
-        stat_filters[col] = (0, 0)
-        st.sidebar.slider(
-            f"{col} range",
-            0,
-            0,
-            disabled=True,
-            key=f"{col}_range"
-        )
-        continue
+        min_val, max_val = 0, 0
+    else:
+        min_val = int(base_filtered[col].min())
+        max_val = int(base_filtered[col].max())
 
-    min_val = int(base_filtered[col].min())
-    max_val = int(base_filtered[col].max())
-
-    # Assign default
+    # Always assign a tuple first
     stat_filters[col] = (min_val, max_val)
 
-    # Disabled if min==max
-    if min_val == max_val:
-        st.sidebar.slider(
-            f"{col} range",
-            min_val,
-            max_val,
-            disabled=True,
-            key=f"{col}_range"
-        )
-    else:
-        stat_filters[col] = st.sidebar.slider(
-            f"{col} range",
-            min_val,
-            max_val,
-            key=f"{col}_range"
-        )
+    # Create the slider
+    st.sidebar.slider(
+        f"{col} range",
+        min_val,
+        max_val,
+        value=(min_val, max_val),
+        disabled=(min_val == max_val),
+        key=f"{col}_range"
+    )
+
 
 
 
