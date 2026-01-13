@@ -60,7 +60,7 @@ df["Position"] = df.apply(assign_position, axis=1)
 # ----------------------------
 st.sidebar.header("Filters")
 
-# Position filter
+# Position dropdown
 position_input = st.sidebar.selectbox(
     "Position",
     ["All", "GK", "DF", "MF", "FW"]
@@ -78,41 +78,34 @@ for col in ["St", "Tk", "Ps", "Sh", "KAb", "TAb", "PAb", "SAb"]:
         (min_val, max_val)
     )
 
-# Sort options
-st.sidebar.header("Sort Options")
-sort_column = st.sidebar.selectbox(
-    "Sort by column",
-    ["None"] + numeric_cols
-)
-sort_order = st.sidebar.selectbox(
-    "Order",
-    ["Descending", "Ascending"]
-)
-
 # ----------------------------
 # Apply filters
 # ----------------------------
 filtered = df.copy()
 
-# Position filter
+# Filter by Position
 if position_input != "All":
     filtered = filtered[filtered["Position"] == position_input]
 
-# Stat sliders filter
+# Apply stat sliders
 for col, (min_val, max_val) in stat_sliders.items():
     filtered = filtered[(filtered[col] >= min_val) & (filtered[col] <= max_val)]
 
-# Reset index before display to remove row numbers
+# Reset index to remove row numbers
 filtered_display = filtered.reset_index(drop=True)
 
-# Convert numeric columns to integers for display
+# Convert numeric columns to integers
 for col in numeric_cols:
     filtered_display[col] = filtered_display[col].astype(int)
 
-# Apply sort
-if sort_column != "None":
-    ascending = sort_order == "Ascending"
-    filtered_display = filtered_display.sort_values(by=sort_column, ascending=ascending).reset_index(drop=True)
+# ----------------------------
+# Auto-sort by Position stat
+# ----------------------------
+position_sort_stat = {"GK": "St", "DF": "Tk", "MF": "Ps", "FW": "Sh"}
+
+if position_input != "All":
+    sort_col = position_sort_stat[position_input]
+    filtered_display = filtered_display.sort_values(by=sort_col, ascending=False).reset_index(drop=True)
 
 # ----------------------------
 # Display counts
@@ -121,6 +114,23 @@ st.write(f"Total players loaded: {len(df)}")
 st.write(f"Players after filtering: {len(filtered_display)}")
 
 # ----------------------------
-# Display table
+# Display styled table
 # ----------------------------
-st.table(filtered_display)
+# Alternate row colors and header color
+def style_table(df):
+    # Alternate row colors
+    row_colors = ['background-color: #f9f9f9' if i % 2 else '' for i in range(len(df))]
+    # Header style
+    header_styles = [{'selector': 'th', 'props': [('background-color', '#4CAF50'),
+                                                 ('color', 'white'),
+                                                 ('text-align', 'center')]}]
+    # Apply styles
+    styled = df.style.apply(lambda x: row_colors, axis=1) \
+                     .set_table_styles(header_styles) \
+                     .set_properties(**{'text-align': 'center'})
+    # Left-align Player column
+    styled = styled.set_properties(subset=['Player'], **{'text-align': 'left'})
+    return styled
+
+styled_df = style_table(filtered_display)
+st.dataframe(styled_df, use_container_width=True)
