@@ -73,30 +73,26 @@ filtered = df[
 # Display table using AgGrid
 # ----------------------------
 # Reset index to remove row numbers
+# Reset index
 filtered_display = filtered.reset_index(drop=True)
 
 # Build AgGrid options
 gb = GridOptionsBuilder.from_dataframe(filtered_display)
-gb.configure_default_column(resizable=True, filter=True)
+gb.configure_default_column(resizable=True, filter=True, flex=1)  # flex added
+numeric_cols = ["Age","St","Tk","Ps","Sh","Ag","KAb","TAb","PAb","SAb"]
 
-# Center-align numeric columns
 for col in numeric_cols:
     gb.configure_column(col, type=["numericColumn"], cellStyle={"textAlign": "center"})
 
-# Left-align Player column
 gb.configure_column("Player", cellStyle={"textAlign": "left"})
 
-# Build grid options
 gridOptions = gb.build()
 
-# Display interactive table (browser scrolling, columns auto-fit)
-row_height = 2500  # pixels per row
-grid_height = min(len(filtered_display) * row_height, 2000)  # max 2000px
+# Display AgGrid with auto height
 AgGrid(
     filtered_display,
     gridOptions=gridOptions,
     enable_enterprise_modules=False,
-    fit_columns_on_grid_load=True,
-    height=grid_height
+    domLayout='autoHeight',
+    fit_columns_on_grid_load=True
 )
-
