@@ -74,6 +74,16 @@ club_input = st.sidebar.selectbox(
     key="club"
 )
 
+# ------------------------------
+# Youth filter
+# ------------------------------
+youth_filter = st.sidebar.checkbox("Youth Teams Only")
+
+if youth_filter:
+    # Keep only teams starting with "y"
+    base_filtered = base_filtered[base_filtered["Team"].str.startswith("y")]
+
+
 position_input = st.sidebar.selectbox(
     "Position",
     ["All","GK","DF","MF","FW"],
