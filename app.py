@@ -118,7 +118,7 @@ if st.sidebar.button("🔄 Reset all filters"):
     st.session_state.table_key += 1
 
 # Youth-only filter
-youth_filter = st.sidebar.checkbox("👶 Youth Teams Only")
+youth_filter = st.sidebar.checkbox("Youth Teams Only")
 
 # Club dropdown
 if youth_filter:
