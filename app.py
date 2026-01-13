@@ -96,7 +96,7 @@ position_input = st.sidebar.selectbox(
 )
 
 # Youth-only filter
-youth_filter = st.sidebar.checkbox("👶 Youth Only")
+youth_filter = st.sidebar.checkbox("Youth Teams Only")
 
 # Reset sliders if Club/Position changed
 if club_input_full != st.session_state.prev_club or position_input != st.session_state.prev_position:
