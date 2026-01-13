@@ -39,7 +39,7 @@ def load_data():
 df = load_data()
 
 # Convert numeric columns
-numeric_cols = ["Age", "St", "Tk", "Ps", "Sh", "Ag", "KAb", "TAb", "PAb", "SAb"]
+numeric_cols = ["Age", "St", "Tk", "Ps", "Sh", "KAb", "TAb", "PAb", "SAb"]
 for col in numeric_cols:
     df[col] = pd.to_numeric(df[col], errors="coerce")
 
@@ -60,50 +60,36 @@ df["Position"] = df.apply(assign_position, axis=1)
 # ----------------------------
 st.sidebar.header("Filters")
 
-# Age filter
-age_min, age_max = st.sidebar.slider(
-    "Age",
-    min_value=15,
-    max_value=40,
-    value=(18, 30)
+# Position dropdown
+position_input = st.sidebar.selectbox(
+    "Position",
+    ["All", "GK", "DF", "MF", "FW"]
 )
 
-# Position filter (text input, empty = no filter)
-position_input = st.sidebar.text_input(
-    "Position (GK, DF, MF, FW)",
-    value=""
-).upper().strip()
-
-# Stat filters (min/max text inputs)
-stat_filters = {}
+# Stat sliders
+stat_sliders = {}
 for col in numeric_cols:
-    min_val = st.sidebar.text_input(f"{col} min", "")
-    max_val = st.sidebar.text_input(f"{col} max", "")
-    stat_filters[col] = (min_val, max_val)
+    min_val = int(df[col].min())
+    max_val = int(df[col].max())
+    stat_sliders[col] = st.sidebar.slider(
+        f"{col} range",
+        min_val,
+        max_val,
+        (min_val, max_val)
+    )
 
 # ----------------------------
 # Apply filters
 # ----------------------------
-filtered = df[
-    (df["Age"] >= age_min) &
-    (df["Age"] <= age_max)
-]
+filtered = df.copy()
 
-if position_input in ["GK", "DF", "MF", "FW"]:
+# Position filter
+if position_input != "All":
     filtered = filtered[filtered["Position"] == position_input]
 
-# Apply stat filters
-for col, (min_val, max_val) in stat_filters.items():
-    if min_val.strip():
-        try:
-            filtered = filtered[filtered[col] >= float(min_val)]
-        except ValueError:
-            pass  # ignore invalid input
-    if max_val.strip():
-        try:
-            filtered = filtered[filtered[col] <= float(max_val)]
-        except ValueError:
-            pass
+# Stat sliders filter
+for col, (min_val, max_val) in stat_sliders.items():
+    filtered = filtered[(filtered[col] >= min_val) & (filtered[col] <= max_val)]
 
 # ----------------------------
 # Display counts
