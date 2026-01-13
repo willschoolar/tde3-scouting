@@ -111,11 +111,11 @@ st.sidebar.header("Filters")
 
 # Reset all filters button
 if st.sidebar.button("Reset all filters"):
+    # Reset session state variables
     st.session_state.club = "All"
     st.session_state.position = "All"
     st.session_state.slider_key_version += 1
-    st.session_state.table_key += 1
-    st.experimental_rerun()  # Full refresh to reset df sort and sliders
+    st.session_state.table_key += 1  # Force dataframe to re-render and reset sort
 
 youth_filter = st.sidebar.checkbox("Youth Teams Only")
 position_input = st.sidebar.selectbox("Position", ["All","GK","DF","MF","FW"], key="position")
