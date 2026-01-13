@@ -42,7 +42,6 @@ df["Position"] = df.apply(assign_position, axis=1)
 # ------------------------------
 # Club mapping (abbr → full name)
 # ------------------------------
-
 raw_club_map = {
     "ars": "Arsenal", "ast": "Aston Villa", "bir": "Birmingham City", "bla": "Blackburn Rovers",
     "bol": "Bolton Wanderers", "che": "Chelsea", "der": "Derby County", "eve": "Everton",
@@ -72,7 +71,7 @@ raw_club_map = {
     "yha": "Hartlepool United U21s", "yip": "Ipswich Town U21s", "yle": "Leeds United U21s",
     "ylc": "Leicester City U21s", "ynf": "Nottingham Forest U21s", "ysp": "Scunthorpe United U21s",
     "ywa": "Watford U21s", "ywo": "Wolverhampton U21s", "ybr": "Brentford U21s", "ysr": "Shrewsbury Town U21s",
-    "ywr": "Wrexham U21s", "wre": "Wrexham", "bou": "Bournemouth", "bre": "Brentford"
+    "ywr": "Wrexham U21s"
 }
 
 raw_senior_to_youth = {
@@ -84,10 +83,9 @@ raw_senior_to_youth = {
     "hul": ["yhu"], "ips": ["yip"], "lei": ["ylc"], "nor": ["yno"], "qpr": ["yqp"],
     "scu": ["ysp"], "shu": ["ysu"], "shw": ["ysh"], "sou": ["yso"], "sto": ["yst"],
     "wat": ["ywa"], "wba": ["ywb"], "wol": ["ywo"], "bha": ["ybh"], "not": ["ynf"],
-    "wre": ["ywr"], "bou": ["ybo"], "bre": ["ybr"], "lee": ["yle"], "swa": ["ysc"]
+    "swi": ["ysw"], "har": ["yha"], "lee": ["yle"], "swa": ["ysc"]
 }
 
-# Only keep teams actually present in all_plrs.txt
 all_teams = set(df["Team"].unique())
 club_map = {abbr: name for abbr, name in raw_club_map.items() if abbr in all_teams}
 senior_to_youth = {sen: [y for y in youth_list if y in all_teams] 
@@ -97,14 +95,10 @@ senior_to_youth = {sen: [y for y in youth_list if y in all_teams]
 # Session state helpers
 # ------------------------------
 STAT_COLS = ["St","Tk","Ps","Sh","KAb","TAb","PAb","SAb"]
-if "table_key" not in st.session_state:
-    st.session_state.table_key = 0
-if "slider_key_version" not in st.session_state:
-    st.session_state.slider_key_version = 0
-if "prev_club" not in st.session_state:
-    st.session_state.prev_club = "All"
-if "prev_position" not in st.session_state:
-    st.session_state.prev_position = "All"
+if "table_key" not in st.session_state: st.session_state.table_key = 0
+if "slider_key_version" not in st.session_state: st.session_state.slider_key_version = 0
+if "prev_club" not in st.session_state: st.session_state.prev_club = "All"
+if "prev_position" not in st.session_state: st.session_state.prev_position = "All"
 
 # ------------------------------
 # Sidebar Filters & Reset
@@ -118,7 +112,7 @@ if st.sidebar.button("🔄 Reset all filters"):
     st.session_state.table_key += 1
 
 # Youth-only filter
-youth_filter = st.sidebar.checkbox("Youth Teams Only")
+youth_filter = st.sidebar.checkbox("👶 Youth Teams Only")
 
 # Club dropdown
 if youth_filter:
@@ -146,6 +140,9 @@ position_input = st.sidebar.selectbox(
     key="position"
 )
 
+# Youth eligible filter
+youth_eligible_only = st.sidebar.checkbox("🎯 Youth Eligible Only")
+
 # Reset sliders if club/position changed
 if club_input_full != st.session_state.prev_club or position_input != st.session_state.prev_position:
     st.session_state.slider_key_version += 1
@@ -172,6 +169,28 @@ if position_input != "All":
 
 if youth_filter:
     base_filtered = base_filtered[base_filtered["Team"].str.startswith("y")]
+
+# ------------------------------
+# Youth eligible logic
+# ------------------------------
+YOUTH_RULES = [
+    (22, 100, 19, 17, 17, 19),  # 22+
+    (19, 21, 20, 18, 18, 20),   # 19-21
+    (0, 18, 22, 20, 20, 22)     # 0-18
+]
+
+def is_youth_eligible(row):
+    age = row["Age"]
+    pos = row["Position"]
+    pos_col = {"GK": "St", "DF": "Tk", "MF": "Ps", "FW": "Sh"}[pos]
+    for (age_min, age_max, max_gk, max_df, max_mf, max_fw) in YOUTH_RULES:
+        if age_min <= age <= age_max:
+            max_skill = {"GK": max_gk, "DF": max_df, "MF": max_mf, "FW": max_fw}[pos]
+            return row[pos_col] <= max_skill
+    return False
+
+if youth_eligible_only:
+    base_filtered = base_filtered[base_filtered.apply(is_youth_eligible, axis=1)]
 
 # ------------------------------
 # Sliders
