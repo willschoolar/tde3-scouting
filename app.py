@@ -158,7 +158,10 @@ if club_input_full != st.session_state.prev_club or position_input != st.session
 # ------------------------------
 base_filtered = df.copy()
 
-if club_abbr != "All":
+if club_abbr == "All":
+    if not include_youths:
+        base_filtered = base_filtered[~base_filtered["Team"].str.startswith("y")]
+else:
     clubs_to_include = [club_abbr]
     if include_youths and club_abbr in senior_to_youth:
         clubs_to_include += senior_to_youth[club_abbr]
