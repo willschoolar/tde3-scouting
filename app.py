@@ -66,7 +66,7 @@ def reset_all():
     st.session_state.club = "All"
     st.session_state.position = "All"
     clear_stat_sliders()
-    st.session_state.table_key += 1
+    st.session_state.table_key += 1  # only here
 
 # --------------------------------------------------
 # Sidebar filters
