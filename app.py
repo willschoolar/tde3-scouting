@@ -73,7 +73,7 @@ for col in numeric_cols:
     filtered_display[col] = filtered_display[col].astype(int)
 
 # ----------------------------
-# Auto-sort when team selected
+# Sorting
 # ----------------------------
 position_order = {"GK": 0, "DF": 1, "MF": 2, "FW": 3}
 position_sort_map = {
@@ -107,21 +107,18 @@ st.write(f"Players after filtering: {len(filtered_display)}")
 st.markdown("""
 <style>
 div[data-testid="stDataFrame"] table {table-layout: fixed;}
-div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {text-align: center;}
-div[data-testid="stDataFrame"] td:nth-child(2) {text-align: left;} /* Player left-aligned */
+div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {text-align: center; white-space: nowrap;}
+div[data-testid="stDataFrame"] td:nth-child(2), div[data-testid="stDataFrame"] th:nth-child(2) {
+    text-align: left; min-width: 150px;  /* Player column fixed width to avoid wrapping */
+}
 </style>
 """, unsafe_allow_html=True)
 
 # ----------------------------
-# Display table
+# Display table with dynamic height
 # ----------------------------
 row_height_px = 30
 num_rows_to_show = 30
 max_height = row_height_px*num_rows_to_show + 50  # 30 rows + header
 
-if club_input == "All":
-    # Use st.table for full browser scroll, no internal scroll
-    st.table(filtered_display)
-else:
-    # Use st.dataframe with fixed height for 30 rows
-    st.dataframe(filtered_display, use_container_width=True, height=max_height)
+st.dataframe(filtered_display, use_container_width=True, height=max_height)
