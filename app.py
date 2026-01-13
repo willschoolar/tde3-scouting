@@ -47,7 +47,7 @@ def assign_position(row):
 df["Position"] = df.apply(assign_position, axis=1)
 
 # ----------------------------
-# Init table key (forces reset)
+# Init table key (forces sort reset)
 # ----------------------------
 if "table_key" not in st.session_state:
     st.session_state.table_key = 0
@@ -63,7 +63,6 @@ def reset_filters():
             int(df[col].min()),
             int(df[col].max())
         )
-    # FORCE dataframe remount
     st.session_state.table_key += 1
 
 # ----------------------------
@@ -82,29 +81,49 @@ position_input = st.sidebar.selectbox(
     "Position", ["All","GK","DF","MF","FW"], key="position"
 )
 
+# ----------------------------
+# BASE FILTER (Club + Position only)
+# ----------------------------
+base_filtered = df.copy()
+
+if club_input != "All":
+    base_filtered = base_filtered[base_filtered["Team"] == club_input]
+
+if position_input != "All":
+    base_filtered = base_filtered[base_filtered["Position"] == position_input]
+
+# ----------------------------
+# Dynamic stat sliders
+# ----------------------------
 stat_sliders = {}
+
 for col in ["St","Tk","Ps","Sh","KAb","TAb","PAb","SAb"]:
+    min_val = int(base_filtered[col].min())
+    max_val = int(base_filtered[col].max())
+
+    current_min, current_max = st.session_state.get(
+        f"{col}_range", (min_val, max_val)
+    )
+
+    # Clamp values safely
+    current_min = max(min_val, current_min)
+    current_max = min(max_val, current_max)
+
     stat_sliders[col] = st.sidebar.slider(
         f"{col} range",
-        int(df[col].min()),
-        int(df[col].max()),
-        (int(df[col].min()), int(df[col].max())),
+        min_val,
+        max_val,
+        (current_min, current_max),
         key=f"{col}_range"
     )
 
-# 🔑 Any filter change forces table reset
+# Any filter change forces dataframe remount
 st.session_state.table_key += 1
 
 # ----------------------------
-# Apply filters
+# Apply stat filters
 # ----------------------------
-filtered = df.copy()
-
-if club_input != "All":
-    filtered = filtered[filtered["Team"] == club_input]
-
-if position_input != "All":
-    filtered = filtered[filtered["Position"] == position_input]
+filtered = base_filtered.copy()
 
 for col, (min_val, max_val) in stat_sliders.items():
     filtered = filtered[(filtered[col] >= min_val) & (filtered[col] <= max_val)]
@@ -115,7 +134,7 @@ for col in numeric_cols:
     filtered_display[col] = filtered_display[col].astype(int)
 
 # ----------------------------
-# Sorting (team view)
+# Sorting logic
 # ----------------------------
 position_order = {"GK": 0, "DF": 1, "MF": 2, "FW": 3}
 position_sort_map = {
@@ -125,9 +144,8 @@ position_sort_map = {
     "FW": ("Sh","SAb")
 }
 
-# --- SORTING LOGIC ---
 if position_input != "All":
-    # Sort ONLY by the selected position's stats
+    # Sort ONLY by selected position stats
     primary, secondary = position_sort_map[position_input]
     filtered_display = (
         filtered_display
@@ -136,11 +154,8 @@ if position_input != "All":
     )
 
 elif club_input != "All":
-    # Sort by position order, then relevant stats
+    # Sort by position order then relevant stats
     filtered_display["pos_order"] = filtered_display["Position"].map(position_order)
-    filtered_display["primary"] = filtered_display.apply(
-        lambda r: position_sort_map[r["Position"]][0], axis=1
-    )
     filtered_display["primary_val"] = filtered_display.apply(
         lambda r: r[position_sort_map[r["Position"]][0]], axis=1
     )
@@ -151,13 +166,12 @@ elif club_input != "All":
     filtered_display = (
         filtered_display
         .sort_values(
-            by=["pos_order", "primary_val", "secondary_val"],
+            by=["pos_order","primary_val","secondary_val"],
             ascending=[True, False, False]
         )
-        .drop(columns=["pos_order", "primary", "primary_val", "secondary_val"])
+        .drop(columns=["pos_order","primary_val","secondary_val"])
         .reset_index(drop=True)
     )
-
 
 # ----------------------------
 # Counts
@@ -170,7 +184,9 @@ st.write(f"Players after filtering: {len(filtered_display)}")
 # ----------------------------
 st.markdown("""
 <style>
-div[data-testid="stDataFrame"] table { table-layout: fixed; }
+div[data-testid="stDataFrame"] table {
+    table-layout: fixed;
+}
 div[data-testid="stDataFrame"] td,
 div[data-testid="stDataFrame"] th {
     text-align: center;
@@ -185,7 +201,7 @@ div[data-testid="stDataFrame"] th:nth-child(2) {
 """, unsafe_allow_html=True)
 
 # ----------------------------
-# Display table (SORT RESET WORKS)
+# Display table
 # ----------------------------
 ROW_HEIGHT = 30
 VISIBLE_ROWS = 30
