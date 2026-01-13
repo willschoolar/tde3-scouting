@@ -30,7 +30,7 @@ numeric_cols = ["Age", "St", "Tk", "Ps", "Sh", "Ag",
 for col in numeric_cols:
     df[col] = pd.to_numeric(df[col], errors="coerce")
 
-# Drop rows where Age is missing or invalid
+# Drop rows where Age is missing
 df = df.dropna(subset=["Age"])
 
 # Ensure Age is integer
@@ -39,18 +39,12 @@ df["Age"] = df["Age"].astype(int)
 # Sidebar filters
 st.sidebar.header("Filters")
 
-age_min_value = int(df["Age"].min())
-age_max_value = int(df["Age"].max())
-
-# Safe default values
-default_min = max(18, age_min_value)
-default_max = min(30, age_max_value)
-
+# HARD-CODED safe age range
 age_min, age_max = st.sidebar.slider(
     "Age",
-    age_min_value,
-    age_max_value,
-    (default_min, default_max)
+    min_value=15,
+    max_value=40,
+    value=(18, 30)
 )
 
 filtered = df[
