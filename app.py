@@ -60,15 +60,15 @@ df["Position"] = df.apply(assign_position, axis=1)
 # ----------------------------
 st.sidebar.header("Filters")
 
-# Position dropdown
+# Position filter
 position_input = st.sidebar.selectbox(
     "Position",
     ["All", "GK", "DF", "MF", "FW"]
 )
 
-# Stat sliders
+# Stat sliders (exclude Ag)
 stat_sliders = {}
-for col in numeric_cols:
+for col in ["St", "Tk", "Ps", "Sh", "KAb", "TAb", "PAb", "SAb"]:
     min_val = int(df[col].min())
     max_val = int(df[col].max())
     stat_sliders[col] = st.sidebar.slider(
@@ -77,6 +77,17 @@ for col in numeric_cols:
         max_val,
         (min_val, max_val)
     )
+
+# Sort options
+st.sidebar.header("Sort Options")
+sort_column = st.sidebar.selectbox(
+    "Sort by column",
+    ["None"] + numeric_cols
+)
+sort_order = st.sidebar.selectbox(
+    "Order",
+    ["Descending", "Ascending"]
+)
 
 # ----------------------------
 # Apply filters
@@ -91,19 +102,25 @@ if position_input != "All":
 for col, (min_val, max_val) in stat_sliders.items():
     filtered = filtered[(filtered[col] >= min_val) & (filtered[col] <= max_val)]
 
-# ----------------------------
-# Display counts
-# ----------------------------
-st.write(f"Total players loaded: {len(df)}")
-st.write(f"Players after filtering: {len(filtered)}")
-
-# ----------------------------
-# Display table
-# ----------------------------
+# Reset index before display to remove row numbers
 filtered_display = filtered.reset_index(drop=True)
 
 # Convert numeric columns to integers for display
 for col in numeric_cols:
     filtered_display[col] = filtered_display[col].astype(int)
 
+# Apply sort
+if sort_column != "None":
+    ascending = sort_order == "Ascending"
+    filtered_display = filtered_display.sort_values(by=sort_column, ascending=ascending).reset_index(drop=True)
+
+# ----------------------------
+# Display counts
+# ----------------------------
+st.write(f"Total players loaded: {len(df)}")
+st.write(f"Players after filtering: {len(filtered_display)}")
+
+# ----------------------------
+# Display table
+# ----------------------------
 st.table(filtered_display)
