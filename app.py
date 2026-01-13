@@ -90,14 +90,14 @@ if st.sidebar.button("🔄 Reset all filters"):
     st.session_state.slider_key_version += 1
     st.session_state.table_key += 1
 
+# Youth-only filter
+youth_filter = st.sidebar.checkbox("Youth Teams Only")
+
 # Club dropdown: show only valid clubs depending on youth filter
 if youth_filter:
     available_clubs = sorted([abbr for abbr in df["Team"].unique() if abbr.startswith("y")])
 else:
     available_clubs = sorted([abbr for abbr in df["Team"].unique() if not abbr.startswith("y")])
-
-# Youth-only filter
-youth_filter = st.sidebar.checkbox("Youth Teams Only")
 
 # Map abbreviations to full names for dropdown
 club_options = ["All"] + [club_map.get(abbr, abbr) for abbr in available_clubs]
