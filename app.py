@@ -59,3 +59,12 @@ filtered = df[
     (df["Age"] >= age_min) &
     (df["Age"] <= age_max)
 ]
+
+st.write("Total players loaded:", len(df))
+st.write("Players after filtering:", len(filtered))
+
+st.dataframe(
+    filtered,
+    use_container_width=True,
+    height=600
+)
