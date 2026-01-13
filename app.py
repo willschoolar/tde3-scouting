@@ -92,7 +92,7 @@ raw_club_map = {
     "yha": "Hartlepool United U21s", "yip": "Ipswich Town U21s", "yle": "Leeds United U21s",
     "ylc": "Leicester City U21s", "ynf": "Nottingham Forest U21s", "ysp": "Scunthorpe United U21s",
     "ywa": "Watford U21s", "ywo": "Wolverhampton U21s", "ybr": "Brentford U21s", "ysr": "Shrewsbury Town U21s",
-    "ywr": "Wrexham U21s";"bou": "Bournemouth", "bre":"Brentford", "wre":"Wrexham"
+    "ywr": "Wrexham U21s", "bou": "Bournemouth", "bre":"Brentford", "wre":"Wrexham"
 }
 
 # ------------------------------
