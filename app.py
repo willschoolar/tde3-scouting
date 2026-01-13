@@ -46,44 +46,28 @@ df["Position"] = df.apply(assign_position, axis=1)
 # ------------------------------
 STAT_COLS = ["St","Tk","Ps","Sh","KAb","TAb","PAb","SAb"]
 
+if "table_key" not in st.session_state:
+    st.session_state.table_key = 0
 if "prev_club" not in st.session_state:
     st.session_state.prev_club = "All"
 if "prev_position" not in st.session_state:
     st.session_state.prev_position = "All"
-if "table_key" not in st.session_state:
-    st.session_state.table_key = 0
-
-def clear_stat_sliders():
-    for col in STAT_COLS:
-        key = f"{col}_range"
-        if key in st.session_state:
-            del st.session_state[key]
+if "reset_filters" not in st.session_state:
+    st.session_state.reset_filters = False
 
 # ------------------------------
-# Reset button
+# Sidebar Filters & Reset
 # ------------------------------
 st.sidebar.header("Filters")
-reset_clicked = st.sidebar.button("🔄 Reset all filters")
-if reset_clicked:
-    # Reset Club and Position
+
+# Reset button
+if st.sidebar.button("🔄 Reset all filters"):
     st.session_state.club = "All"
     st.session_state.position = "All"
-
-    # Clear all slider keys
-    for col in STAT_COLS:
-        key = f"{col}_range"
-        if key in st.session_state:
-            del st.session_state[key]
-
-    # Increment table_key to force table refresh
+    st.session_state.reset_filters = True
     st.session_state.table_key += 1
 
-    # No st.experimental_rerun() needed — Streamlit will automatically re-run
-
-
-# ------------------------------
 # Club / Position filters
-# ------------------------------
 club_input = st.sidebar.selectbox(
     "Club",
     ["All"] + sorted(df["Team"].unique()),
@@ -97,10 +81,10 @@ position_input = st.sidebar.selectbox(
 )
 
 # ------------------------------
-# Clear sliders and reset table_key if filter changes
+# Clear sliders if filter changed
 # ------------------------------
 if club_input != st.session_state.prev_club or position_input != st.session_state.prev_position:
-    clear_stat_sliders()
+    st.session_state.reset_filters = True
     st.session_state.prev_club = club_input
     st.session_state.prev_position = position_input
     st.session_state.table_key += 1
@@ -115,29 +99,34 @@ if position_input != "All":
     base_filtered = base_filtered[base_filtered["Position"] == position_input]
 
 # ------------------------------
-# Slider ranges based on full dataset
+# Slider ranges
 # ------------------------------
 SLIDER_RANGES = {}
 for col in STAT_COLS:
     SLIDER_RANGES[col] = (int(df[col].min()), int(df[col].max()))
 
+# ------------------------------
+# Stat sliders
+# ------------------------------
 stat_filters = {}
 for col in STAT_COLS:
     min_val, max_val = SLIDER_RANGES[col]
     step = 250 if col in ["KAb","TAb","PAb","SAb"] else 1
 
-    # Assign tuple
-    stat_filters[col] = (min_val, max_val)
+    # Use reset flag to force default values
+    default_val = (min_val, max_val) if st.session_state.reset_filters else st.session_state.get(f"{col}_range", (min_val, max_val))
 
-    # Create slider
     stat_filters[col] = st.sidebar.slider(
         f"{col} range",
         min_val,
         max_val,
-        value=(min_val, max_val),
+        value=default_val,
         step=step,
         key=f"{col}_range"
     )
+
+# Clear reset flag after sliders are drawn
+st.session_state.reset_filters = False
 
 # ------------------------------
 # Apply stat filters
@@ -145,6 +134,7 @@ for col in STAT_COLS:
 filtered = base_filtered.copy()
 for col, (lo, hi) in stat_filters.items():
     filtered = filtered[(filtered[col] >= lo) & (filtered[col] <= hi)]
+
 filtered = filtered.reset_index(drop=True)
 for col in numeric_cols:
     filtered[col] = filtered[col].astype(int)
