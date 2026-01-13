@@ -48,7 +48,8 @@ STAT_COLS = ["St","Tk","Ps","Sh","KAb","TAb","PAb","SAb"]
 
 def clear_stat_sliders():
     for col in STAT_COLS:
-        st.session_state.pop(f"{col}_range", None)
+        if f"{col}_range" in st.session_state:
+            del st.session_state[f"{col}_range"]
 
 if "prev_club" not in st.session_state:
     st.session_state.prev_club = "All"
@@ -66,7 +67,7 @@ def reset_all():
     st.session_state.club = "All"
     st.session_state.position = "All"
     clear_stat_sliders()
-    st.session_state.table_key += 1  # only here
+    st.session_state.table_key += 1
 
 # --------------------------------------------------
 # Sidebar filters
@@ -90,7 +91,7 @@ position_input = st.sidebar.selectbox(
 )
 
 # --------------------------------------------------
-# Reset sliders if base filters changed
+# Clear sliders if base filters changed
 # --------------------------------------------------
 if (
     club_input != st.session_state.prev_club
@@ -99,10 +100,9 @@ if (
     clear_stat_sliders()
     st.session_state.prev_club = club_input
     st.session_state.prev_position = position_input
-    st.session_state.table_key += 1
 
 # --------------------------------------------------
-# Base filtering (Club + Position only)
+# Base filtering
 # --------------------------------------------------
 base_filtered = df.copy()
 
@@ -113,36 +113,31 @@ if position_input != "All":
     base_filtered = base_filtered[base_filtered["Position"] == position_input]
 
 # --------------------------------------------------
-# Dynamic sliders (SAFE)
+# Dynamic sliders (bulletproof)
 # --------------------------------------------------
 stat_filters = {}
 
 for col in STAT_COLS:
-    # Base filtered dataframe may be empty
     if base_filtered.empty:
         min_val, max_val = 0, 0
     else:
         min_val = int(base_filtered[col].min())
         max_val = int(base_filtered[col].max())
 
-    # Always assign a tuple first
+    # Assign tuple first
     stat_filters[col] = (min_val, max_val)
 
-    # Create the slider
+    # Disabled if min == max
+    disabled = (min_val == max_val)
+
+    # Create slider without forcing value to avoid session_state conflicts
     st.sidebar.slider(
         f"{col} range",
         min_val,
         max_val,
-        value=(min_val, max_val),
-        disabled=(min_val == max_val),
+        disabled=disabled,
         key=f"{col}_range"
     )
-
-
-
-
-# Force table remount on filter change
-st.session_state.table_key += 1
 
 # --------------------------------------------------
 # Apply stat filters
