@@ -110,4 +110,5 @@ row_height_px = 30  # pixels per row
 max_height = 800    # maximum table height in px
 table_height = min(max_height, len(filtered_display)*row_height_px + 50)  # add header height
 
-st.dataframe(filtered_display, use_container_width=True, height=table_height)
+# st.dataframe(filtered_display, use_container_width=True, height=table_height)
+st.dataframe(filtered_display, use_container_width=True, height=800)
